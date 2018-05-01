@@ -1,7 +1,7 @@
-function stopStream()
+function stopCBMEX()
 if (~isempty(timerfind))
     stop(timerfind);
     delete(timerfind);
 end
 cbmex('close');
-disp('Data stream closed');
+disp('CBMEX closed');
