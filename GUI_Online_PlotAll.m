@@ -22,7 +22,7 @@ function varargout = GUI_Online_PlotAll(varargin)
 
 % Edit the above text to modify the response to help GUI_Online_PlotAll
 
-% Last Modified by GUIDE v2.5 01-May-2018 15:57:14
+% Last Modified by GUIDE v2.5 02-May-2018 14:30:20
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -56,7 +56,9 @@ function GUI_Online_PlotAll_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
 
 % Retrieve master handles
-handles.handles_master = varargin{2};
+handles.figure_master = varargin{1};
+
+handles_master = guidata(handles.figure_master);
 
 % set plotAll figure size
 res = get(groot, 'Screensize');
@@ -64,7 +66,7 @@ START_BAR_HEIGHT = 40; % there must be a smarter way to get this but i don't kno
 TITLE_BAR_HEIGHT = 31; % likewise
 
 handles.pos = floor(res.*[1,1,0.85,1]) + ... % right 85% of screen
-    [handles.handles_master.pos(3),START_BAR_HEIGHT,0,-START_BAR_HEIGHT-TITLE_BAR_HEIGHT]; % leaving room for Win10 elements
+    [handles_master.pos(3),START_BAR_HEIGHT,0,-START_BAR_HEIGHT-TITLE_BAR_HEIGHT]; % leaving room for Win10 elements
 
 wwidth = handles.pos(3);
 wheight= handles.pos(4);
@@ -72,7 +74,16 @@ wheight= handles.pos(4);
 % create as many plot axes as required and assign positions dynamically
 numplots = 32; % hardcoded just for now
 
+yplots = floor(sqrt(numplots/2)); % approx twice as many x plots as y plots
+xplots = ceil(numplots/yplots);
 
+%figure(gcf);      % draw into figure_plotAll
+handles.axes{1,numplots}=[];
+for iplot=1:numplots
+    handles.axes{iplot}=subplot(yplots,xplots,iplot);
+    handles.axes{iplot}.XTick=[];
+    handles.axes{iplot}.YTick=[];
+end
 % Update handles structure
 guidata(hObject, handles);
 
@@ -87,11 +98,8 @@ function varargout = GUI_Online_PlotAll_OutputFcn(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-set(hObject,'Visible','On');
 set(hObject,'Units','Pixels','Position',handles.pos);
+set(hObject,'Visible','On');
 
 % Get default command line output from handles structure
-handles.output = handles; % this is kinda a hacky way to pass whole handles
-                          % struct, instead of just figure, back to master
-                          % handles
 varargout{1} = handles.output;
