@@ -103,15 +103,14 @@ varargout{1} = handles.output;
 
 % --- Executes on button press in streamButton.
 function streamButton_Callback(hObject, eventdata, handles)
-ispressed = get(hObject,'Value');
-if (ispressed)
+if strcmp(hObject.String,'Start stream from NSP')
     err = startCBMEX(handles);
     if (err)
         set(handles.streamStatusText1,'String','Failed to open CBMEX');
         set(handles.streamStatusText1,'ForegroundColor',[1 0.2 0.2]);
         
         errstatus = sprintf(['\nIs Central running on acquisition PC?\n' ...
-            'Is acquisition PC''s IP address correct?\n' ...
+            'Is acquisition PC''s IP address 192.168.137.1?\n' ...
             'Can this PC successfully ping that IP?']);
         set(handles.streamStatusText2,'String',errstatus);
         set(hObject,'Value',0);
@@ -121,10 +120,10 @@ if (ispressed)
         set(handles.streamButton,'String','Close stream');
         set(handles.plotButton','Enable','On');
     end
-else if (~ispressed)
-    stopCBMEX();
+else
+    endStream();
 end
-end
+
 
 % --- Executes on button press in streamStimButton.
 function streamStimButton_Callback(hObject, eventdata, handles)
@@ -132,12 +131,12 @@ function streamStimButton_Callback(hObject, eventdata, handles)
 
 % --- Executes on button press in plotButton.
 function plotButton_Callback(hObject, eventdata, handles)
-% matlab GUI .m files have a convoluted way of handling input variables, but in
-% the end the inputs do get passed along (in the form of varargin) to the
-% GUI's openingFcn. there, i push this input (pointer to this figure's handles) into
-% that figure's handles, and the LHS of the below line does vice versa.
-% in other words, in this GUI, handles.handles_plotAll points to other GUI,
-% and in other GUI, handles.handles_master points here.
+% matlab GUI .m files have a convoluted way of handling input variables,
+% but in the end the inputs do get passed along (in the form of varargin)
+% to the GUI's openingFcn. there, i push this input (pointer to this
+% figure) into that figure's handles, and the LHS of the below line does
+% vice versa. in other words, in this GUI, handles.figure_plotAll points
+% to other GUI, and in other GUI, handles.figure_master points here.
 handles.figure_plotAll = GUI_Online_PlotAll(handles.figure1);
 guidata(hObject,handles);
 

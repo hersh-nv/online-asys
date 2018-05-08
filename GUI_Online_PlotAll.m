@@ -55,7 +55,7 @@ function GUI_Online_PlotAll_OpeningFcn(hObject, eventdata, handles, varargin)
 % Choose default command line output for GUI_Online_PlotAll
 handles.output = hObject;
 
-% Retrieve master handles
+% Store master handles
 handles.figure_master = varargin{1};
 
 handles_master = guidata(handles.figure_master);
@@ -71,19 +71,8 @@ handles.pos = floor(res.*[1,1,0.85,1]) + ... % right 85% of screen
 wwidth = handles.pos(3);
 wheight= handles.pos(4);
 
-% create as many plot axes as required and assign positions dynamically
-numplots = 32; % hardcoded just for now
+handles = startTuningAll(handles);
 
-yplots = floor(sqrt(numplots/2)); % approx twice as many x plots as y plots
-xplots = ceil(numplots/yplots);
-
-%figure(gcf);      % draw into figure_plotAll
-handles.axes{1,numplots}=[];
-for iplot=1:numplots
-    handles.axes{iplot}=subplot(yplots,xplots,iplot);
-    handles.axes{iplot}.XTick=[];
-    handles.axes{iplot}.YTick=[];
-end
 % Update handles structure
 guidata(hObject, handles);
 

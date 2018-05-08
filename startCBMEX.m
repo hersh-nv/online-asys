@@ -12,7 +12,7 @@ set(h.streamStatusText1,'String','Opening...');
 set(h.streamStatusText1,'ForegroundColor',[0,0,0]);
 
 % create timer
-h.pullTimer=timer('Period',h.pullUpdatePeriod,...
+h.pullTimer = timer('Period',h.pullUpdatePeriod,...
     'TimerFcn',{@pullCBMEX,h},...
     'ExecutionMode','fixedSpacing'...
     );
@@ -29,14 +29,16 @@ try
     start(h.pullTimer);
 catch
     err=1;
-    start(h.pullTimer);
 end
 
-guidata(h.figure1,h); % saves 'h' (2nd arg) to current figure 'h' (1st arg)
+% update handles struct
+guidata(h.figure1,h);
+
 end
 
 %% Timer callback
 function pullCBMEX(~, ~, h)
+try
 % Callback function for pullTimer. On every call, it checks the CBMEX
 % network buffer and empties the neural and comment data into an
 % accumulating local buffer. After every complete trial, the data is moved
@@ -46,7 +48,7 @@ function pullCBMEX(~, ~, h)
 % See also STARTCBMEX
 
 % use cbmex to pull data; second arg=1 clears buffer
-cbmexSpikeBuffer = cbmex('trialdata', 1);
+[cbmexSpikeBuffer,~,~] = cbmex('trialdata', 1);
 [cbmexCmtBuffer, cbmexCmtTimesBuffer, ~, ~] = cbmex('trialcomment', 1);
 
 % move cbmex neural data into local buffer
@@ -77,11 +79,11 @@ h.cmttimesbuffer=[h.cmttimesbuffer;cbmexCmtTimesBuffer];
 while size(h.cmtbuffer,1)>=2
 
     % if first trial of block, get total stim variants from comments
-    % to preallocate trialdata cell array size
-    if isempty(h.trialdata)
+    % to preallocate spikedata cell array size
+    if isempty(h.spikedata)
         matches=(regexp(h.cmtbuffer{1},'(of)([0-9]+)','tokens'));
         h.stimTypesTotal = str2double(matches{:}{2});
-        h.trialdata{h.maxCh,h.stimTypesTotal,1} = [];
+        h.spikedata{h.maxCh,h.stimTypesTotal,1} = [];
         h.stimTypeReps = zeros(h.stimTypesTotal,1);
     end
     
@@ -95,9 +97,9 @@ while size(h.cmtbuffer,1)>=2
         % find spikes inside trial start and end
         spikeidx=find(h.spikebuffer{ch}>=h.cmttimesbuffer(1) & h.spikebuffer{ch}<h.cmttimesbuffer(2));
         if ~isempty(spikeidx)
-            % subtract trial start time, move to trialdata and clear from
+            % subtract trial start time, move to spikedata and clear from
             % spikebuffer
-            h.trialdata{ch,stim,stimCount}=h.spikebuffer{ch}(spikeidx)-h.cmttimesbuffer(1);
+            h.spikedata{ch,stim,stimCount}=h.spikebuffer{ch}(spikeidx)-h.cmttimesbuffer(1);
             h.spikebuffer{ch}=h.spikebuffer{ch}(spikeidx(end)+1:end);
         end
     end
@@ -112,4 +114,8 @@ end
 % Update handles structure
 guidata(h.figure1,h);
 
+catch ME
+    getReport(ME);
+    keyboard;
+end
 end

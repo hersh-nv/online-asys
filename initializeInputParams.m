@@ -19,7 +19,7 @@ h.plottedTrialNo = [];
 h.spikebuffer{h.maxCh,1}=[];
 h.cmtbuffer = [];
 h.cmttimesbuffer = [];
-h.trialdata={};
+h.spikedata={};
 
 %guidata(hObject,h);
 
