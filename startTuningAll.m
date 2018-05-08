@@ -7,21 +7,22 @@ function h = startTuningAll(h)
 %
 % See also GUI_ONLINE_PLOTALL, GUIDATA
 
-numplots = 32; % hardcoded just for now
+h.numplots = 32; % hardcoded just for now
 
-yplots = floor(sqrt(numplots/2)); % approx twice as many x plots as y plots
-xplots = ceil(numplots/yplots);
+yplots = floor(sqrt(h.numplots/2)); % approx twice as many x plots as y plots
+xplots = ceil(h.numplots/yplots);
 
 figure(h.figure1);      % draw into figure_plotAll
-h.axes{1,numplots}=[];
+h.axes{1,h.numplots}=[];
 h.stimTypesTotal=12;
-for iplot=1:numplots
+for iplot=1:h.numplots
     % create and save handles to axes and lineplot separately
     h.axes{iplot} = subplot(yplots,xplots,iplot);
     h.lines{iplot} = plot(1:h.stimTypesTotal,zeros(1,h.stimTypesTotal));
     
     % adjust axes appearance
     h.axes{iplot}.XLim = [1 h.stimTypesTotal];
+    h.axes{iplot}.YLimMode = 'auto';
     h.axes{iplot}.YLim(1) = 0;
     h.axes{iplot}.XTick=[];
     h.axes{iplot}.YTick=[];
@@ -33,7 +34,7 @@ h.drawAllTimer = timer('Period',h1.drawUpdatePeriod,...
     'TimerFcn',{@updateTuningAll,h},...
     'ExecutionMode','fixedSpacing'...
     );
-%start(h.drawAllTimer);
+start(h.drawAllTimer);
 
 % note: no final call to guidata to save handles structure, instead it is
 % just passed back to GUI_Online_PlotAll_OpeningFcn, which adds other data
@@ -49,12 +50,23 @@ function updateTuningAll(~,~,h)
 % fetch master handles, where spikedata is stored
 h1 = guidata(h.figure_master);
 
-tuning = mean(cellfun(@mean,h_master.spikedata),3);
-tuning(isnan(tuning)) = 0; % 
+try 
+    tuning = mean(cellfun(@(x) sum(x>=h1.tmin & x<=h1.tmax),h1.spikedata),3)./(h1.tmax-h1.tmin);
+    tuning(isnan(tuning)) = 0; %
 
-for ch = h.minCh : h.maxCh
-    axes(h.axes{ch});
-    h.lines{ch}.XData = tuning(ch,:)';
+    for iplot = 1 : h.numplots
+        % axes(h.axes{iplot});
+        if ~isempty(tuning)
+            h.lines{iplot}.YData = tuning(iplot,:);
+            h.axes{iplot}.YLimMode = 'auto';
+            h.axes{iplot}.YLim(1) = 0;
+        else 
+            
+        end
+    end
+catch ME
+    getReport(ME)
+    keyboard;
 end
 
 end
