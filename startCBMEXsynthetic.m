@@ -1,9 +1,9 @@
-function err = startCBMEX(h)
-%  startCBMEX(handles) opens a connection to a PC running Blackrock Central
-%  software and uses a MATLAB timer object to pull neural and stim data
-%  recurrently at a set period. When full trials have completed, spike
-%  times are trial-aligned and moved to a persistent array called
-%  'spikedata' of size nChannels * nStimulusTypes * nStimulusRepetitions.
+function err = startCBMEXsynthetic(h)
+%  startCBMEXsynthetic(handles) uses a MATLAB timer object to pull
+%  synthetic neural and stim data periodically. When full trials have
+%  completed, spike times are trial-aligned and moved to a persistent array
+%  called 'spikedata' of size nChannels * nStimulusConditions *
+%  nStimulusRepetitions.
 
 %  HN May 2018
 
@@ -12,20 +12,19 @@ set(h.streamStatusText1,'String','Opening...');
 set(h.streamStatusText1,'ForegroundColor',[0,0,0]);
 
 % create timer
-h.pullTimer = timer('Period',h.pullUpdatePeriod,...
-    'TimerFcn',{@pullCBMEX,h},...
-    'ExecutionMode','fixedSpacing'...
+h.pullTimer = timer('Period',1, ...
+    'TimerFcn',{@pullCBMEXsynthetic,h.figure1}, ...
+    'ExecutionMode','fixedSpacing', ...
+    'StartDelay',0.5 ...
     );
+
+% CBMEX synthetic only accepts channels 1-32
+h.minCh = 1;
+h.maxCh = 32;
 
 % initialise CBMEX connection
 err=0;
 try
-    cbmex('open');
-    cbmex('mask',0,0); % deactivate all channels except for..
-    for ch=h.minCh:h.maxCh
-        cbmex('mask',ch,1); % channels minCh-maxCh
-    end
-    cbmex('trialconfig',1,'comment',20,'absolute','nocontinuous');
     start(h.pullTimer);
 catch
     err=1;
@@ -37,7 +36,7 @@ guidata(h.figure1,h);
 end
 
 %% Timer callback
-function pullCBMEX(~, ~, h)
+function pullCBMEXsynthetic(~, ~, f)
 try
 % Callback function for pullTimer. On every call, it checks the CBMEX
 % network buffer and empties the neural and comment data into an
@@ -47,30 +46,36 @@ try
 %
 % See also STARTCBMEX
 
-% use cbmex to pull data; second arg=1 clears buffer
-[cbmexSpikeBuffer,~,~] = cbmex('trialdata', 1);
-[cbmexCmtBuffer, cbmexCmtTimesBuffer, ~, ~] = cbmex('trialcomment', 1);
+% get handles
+h = guidata(f);
+
+[spikeBufferTmp, cmtBufferTmp,cmtTimesBufferTmp] = cbmex_Synthetic();
+
+% convert from sample counts to seconds
+cmtTimesBufferTmp = cmtTimesBufferTmp./h.sampling_freq;
 
 % move cbmex neural data into local buffer
 for ch=h.minCh:h.maxCh
+    % convert from sample counts to seconds
+    spikeBufferTmp{ch,2} = spikeBufferTmp{ch,2}./h.sampling_freq;
     % fill spike buffer
-    h.spikebuffer{ch}=[h.spikebuffer{ch};cbmexSpikeBuffer{ch,2}];%spiketimes{ch}];
+    h.spikebuffer{ch}=[h.spikebuffer{ch},spikeBufferTmp{ch,2}];
 end
 
 % some comments are not related to trial start, and contain 'F='.
 % discard these from buffer
-if ~isempty(cbmexCmtBuffer)
-    match=zeros(1,size(cbmexCmtBuffer,1));
-    for cmt=1:size(cbmexCmtBuffer,1)
-        match(cmt)=isempty(regexp(cbmexCmtBuffer{cmt},'F='));
+if ~isempty(cmtBufferTmp)
+    match=zeros(1,size(cmtBufferTmp,1));
+    for cmt=1:size(cmtBufferTmp,1)
+        match(cmt)=isempty(regexp(cmtBufferTmp{cmt},'F='));
     end
-    cbmexCmtBuffer      = cbmexCmtBuffer(find(match));
-    cbmexCmtTimesBuffer = cbmexCmtTimesBuffer(find(match));
+    cmtBufferTmp      = cmtBufferTmp(find(match));
+    cmtTimesBufferTmp = cmtTimesBufferTmp(find(match));
 end
 
 % move cbmex comment data into local buffer
-h.cmtbuffer=[h.cmtbuffer;cbmexCmtBuffer];
-h.cmttimesbuffer=[h.cmttimesbuffer;cbmexCmtTimesBuffer];
+h.cmtbuffer=[h.cmtbuffer;cmtBufferTmp];
+h.cmttimesbuffer=[h.cmttimesbuffer;cmtTimesBufferTmp];
 
 % if at least two comments, at least one full trial has passed,
 % and spike data can be trial-aligned and moved into full array
@@ -79,14 +84,15 @@ while size(h.cmtbuffer,1)>=2
     % if first trial of block, get total stim variants from comments
     % to preallocate spikedata cell array size
     if isempty(h.spikedata)
-        matches=(regexp(h.cmtbuffer{1},'(of)([0-9]+)','tokens'));
+        h.totaltrials = 0;
+        matches=(regexp(h.cmtbuffer{1},'(nDir=)([0-9]+)','tokens'));
         h.stimTypesTotal = str2double(matches{:}{2});
         h.spikedata{h.maxCh,h.stimTypesTotal,1} = [];
         h.stimTypeReps = zeros(h.stimTypesTotal,1);
     end
     
     % handle: find stim type from ID#,
-    matches=(regexp(h.cmtbuffer{1},'(ID=)([0-9]+)','tokens'));
+    matches=(regexp(h.cmtbuffer{1},'(indDir=)([0-9]+)','tokens'));
     stim=str2double(matches{:}{2});
 
     stimCount=h.stimTypeReps(stim)+1;
@@ -102,6 +108,13 @@ while size(h.cmtbuffer,1)>=2
         end
     end
     h.stimTypeReps(stim)=h.stimTypeReps(stim)+1;
+    
+    % notify user of new trial
+    h.totaltrials = h.totaltrials + 1;
+    statusText = sprintf(['\n'...
+                'Total trials = %d\n', ...
+                ], h.totaltrials);
+    h.streamStatusText2.String = statusText;
     fprintf('Stim ID %2d: spikes read.\n',stim);
 
     % clear this trial (comment) from buffer
@@ -112,8 +125,9 @@ end
 % Update handles structure
 guidata(h.figure1,h);
 
+% Hooray for figuring out easy debugging of callbacks
 catch err
-    getReport(err);
+    getReport(err)
     keyboard;
 end
 end

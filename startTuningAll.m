@@ -7,21 +7,24 @@ function h = startTuningAll(h)
 %
 % See also GUI_ONLINE_PLOTALL, GUIDATA
 
-h.numplots = 32; % hardcoded just for now
+h1 = guidata(h.figure_master);
+
+% h.numplots = 32; % hardcoded just for now
+h.numplots = h1.maxCh-h1.minCh + 1;
 
 yplots = floor(sqrt(h.numplots/2)); % approx twice as many x plots as y plots
 xplots = ceil(h.numplots/yplots);
 
 figure(h.figure1);      % draw into figure_plotAll
 h.axes{1,h.numplots}=[];
-h.stimTypesTotal=12;
+
 for iplot=1:h.numplots
     % create and save handles to axes and lineplot separately
     h.axes{iplot} = subplot(yplots,xplots,iplot);
-    h.lines{iplot} = plot(1:h.stimTypesTotal,zeros(1,h.stimTypesTotal));
+    h.lines{iplot} = plot(1:h1.stimTypesTotal,zeros(1,h1.stimTypesTotal));
     
     % adjust axes appearance
-    h.axes{iplot}.XLim = [1 h.stimTypesTotal];
+    h.axes{iplot}.XLim = [1 h1.stimTypesTotal];
     h.axes{iplot}.YLimMode = 'auto';
     h.axes{iplot}.YLim(1) = 0;
     h.axes{iplot}.XTick=[];
@@ -29,7 +32,7 @@ for iplot=1:h.numplots
 end
 
 % create plot update timer
-h1 = guidata(h.figure_master);
+
 h.drawAllTimer = timer('Period',h1.drawUpdatePeriod,...
     'TimerFcn',{@updateTuningAll,h},...
     'ExecutionMode','fixedSpacing'...
@@ -64,8 +67,8 @@ try
             
         end
     end
-catch ME
-    getReport(ME)
+catch err
+    getReport(err)
     keyboard;
 end
 

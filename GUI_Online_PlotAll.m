@@ -22,7 +22,7 @@ function varargout = GUI_Online_PlotAll(varargin)
 
 % Edit the above text to modify the response to help GUI_Online_PlotAll
 
-% Last Modified by GUIDE v2.5 02-May-2018 14:30:20
+% Last Modified by GUIDE v2.5 16-May-2018 11:58:57
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -92,3 +92,11 @@ set(hObject,'Visible','On');
 
 % Get default command line output from handles structure
 varargout{1} = handles.output;
+
+
+% --- Executes when user attempts to close figure1.
+function figure1_CloseRequestFcn(hObject, eventdata, handles)
+% delete plot timer before closing figure
+stop(handles.drawAllTimer);
+delete(handles.drawAllTimer);
+delete(hObject);

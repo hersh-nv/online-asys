@@ -22,7 +22,7 @@ function varargout = GUI_Online_Master(varargin)
 
 % Edit the above text to modify the response to help GUI_Online_Master
 
-% Last Modified by GUIDE v2.5 02-May-2018 10:11:36
+% Last Modified by GUIDE v2.5 16-May-2018 09:46:50
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -68,21 +68,23 @@ wwidth = handles.pos(3);
 wheight= handles.pos(4);
 
 % set element sizes relative to master figure position/size
-handles.streamButton.String = 'Stream from NSP';
-set(handles.streamButton,'Position',[20 wheight-60 wwidth-40 40]);
+handles.streamSelectMenu.Position = [20, wheight-65, 80, 40];
 
-set(handles.streamStatusText1,'String','');
-set(handles.streamStatusText1,'Position',[20,wheight-90,wwidth-40,20]);
+handles.streamButton.String = 'Start NSP stream';
+handles.streamButton.Position = [120 wheight-50 wwidth-140 30];
 
-set(handles.streamStatusText2,'String','Total trials:');
-set(handles.streamStatusText2,'Position',[20,wheight-300,wwidth-40,200]);
+handles.streamStatusText1.String = '';
+handles.streamStatusText1.Position = [20,wheight-90,wwidth-40,20];
 
-set(handles.streamStimButton,'String','Stream from Stim PC');
-set(handles.streamStimButton,'Position',[20,wheight-370,wwidth-40,40]);
+handles.streamStatusText2.String = '';
+handles.streamStatusText2.Position = [20,wheight-300,wwidth-40,200];
 
-set(handles.plotButton,'String','Start plot');
-set(handles.plotButton,'Position',[20,20,wwidth-40,40]);
-set(handles.plotButton','Enable','On');
+handles.streamStimButton.String = 'Stream from Stim PC';
+handles.streamStimButton.Position = [20,wheight-370,wwidth-40,40];
+
+handles.plotButton.String = 'Start plot';
+handles.plotButton.Position = [20,20,wwidth-40,40];
+handles.plotButton.Enable = 'Off';
 
 % Update handles structure
 guidata(hObject, handles);
@@ -103,25 +105,50 @@ varargout{1} = handles.output;
 
 % --- Executes on button press in streamButton.
 function streamButton_Callback(hObject, eventdata, handles)
-if strcmp(hObject.String,'Start stream from NSP')
-    err = startCBMEX(handles);
-    if (err)
-        set(handles.streamStatusText1,'String','Failed to open CBMEX');
-        set(handles.streamStatusText1,'ForegroundColor',[1 0.2 0.2]);
-        
-        errstatus = sprintf(['\nIs Central running on acquisition PC?\n' ...
-            'Is acquisition PC''s IP address 192.168.137.1?\n' ...
-            'Can this PC successfully ping that IP?']);
-        set(handles.streamStatusText2,'String',errstatus);
-        set(hObject,'Value',0);
-    else
-        set(handles.streamStatusText1,'String','CBMEX opened');
-        set(handles.streamStatusText1,'ForegroundColor',[0.2 0.8 0.2]);
-        set(handles.streamButton,'String','Close stream');
-        set(handles.plotButton','Enable','On');
+
+% If button is being used to start stream
+if strcmp(hObject.String,'Start NSP stream')
+    % Check which stream type is selected
+    streamOpts = handles.streamSelectMenu.String;
+    handles.streamSel = streamOpts{handles.streamSelectMenu.Value};
+    
+    if strcmp(handles.streamSel,'CBMEX')
+        err = startCBMEX(handles);
+        if (err)
+            set(handles.streamStatusText1,'String','Failed to open CBMEX');
+            set(handles.streamStatusText1,'ForegroundColor',[1 0.2 0.2]);
+
+            errstatus = sprintf(['\n'...
+                'Is Central running on acquisition PC?\n' ...
+                'Is acquisition PC''s IP address 192.168.137.1?\n' ...
+                'Can this PC successfully ping that IP?']);
+            set(handles.streamStatusText2,'String',errstatus);
+            set(hObject,'Value',0);
+        else
+            handles.streamStatusText1.String = 'CBMEX opened';
+            handles.streamStatusText1 = ForegroundColor',[0.2 0.8 0.2];
+            handles.streamStatusText2.String = '';
+            handles.streamButton.String = 'Close stream';
+            handles.plotButton.Enable = 'On';
+        end
+    elseif strcmp(handles.streamSel,'CBMEX_synthetic')
+        err = startCBMEXsynthetic(handles);
+        if (err)
+            % this is not anticipated
+        else
+            handles.streamStatusText1.String = 'Synthetic CBMEX started';
+            handles.streamStatusText1.ForegroundColor = [0.2 0.8 0.2];
+            handles.streamStatusText2.String = '';
+            handles.streamButton.String = 'Close stream';
+            handles.plotButton.Enable = 'On';
+        end
     end
+% Else, the button stops the stream
 else
     endStream();
+    handles.streamButton.String = 'Start NSP stream';
+    handles.streamStatusText1.String = 'Stream closed';
+    handles.streamStatusText1.ForegroundColor = [0 0 0];
 end
 
 
@@ -131,12 +158,10 @@ function streamStimButton_Callback(hObject, eventdata, handles)
 
 % --- Executes on button press in plotButton.
 function plotButton_Callback(hObject, eventdata, handles)
-% matlab GUI .m files have a convoluted way of handling input variables,
-% but in the end the inputs do get passed along (in the form of varargin)
-% to the GUI's openingFcn. there, i push this input (pointer to this
-% figure) into that figure's handles, and the LHS of the below line does
-% vice versa. in other words, in this GUI, handles.figure_plotAll points
-% to other GUI, and in other GUI, handles.figure_master points here.
+% Create plotAll figure. Pass the current figure handles so that plotAll
+% can add it to its 'handles' structure. plotAll outputs its own figure
+% handles so the next line can do vice versa. Both GUI handles contain a
+% reference to other figure.
 handles.figure_plotAll = GUI_Online_PlotAll(handles.figure1);
 guidata(hObject,handles);
 
@@ -144,6 +169,29 @@ guidata(hObject,handles);
 % --- Executes when user attempts to close figure1.
 function figure1_CloseRequestFcn(hObject, eventdata, handles)
 % when closing fig, this closereqfcn makes sure CBMEX is closed and timers
-% deleted if they haven't been already by pressing Stop Stream button
+% deleted in case the user hasn't pressed the Stop Stream button
 endStream();
 delete(hObject);
+
+
+% --- Executes on selection change in streamSelectMenu.
+function streamSelectMenu_Callback(hObject, eventdata, handles)
+% hObject    handle to streamSelectMenu (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns streamSelectMenu contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from streamSelectMenu
+
+
+% --- Executes during object creation, after setting all properties.
+function streamSelectMenu_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to streamSelectMenu (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
