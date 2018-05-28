@@ -80,9 +80,9 @@ while size(h.cmtbuffer,1)>=2
     % to preallocate spikedata cell array size
     if isempty(h.spikedata)
         matches=(regexp(h.cmtbuffer{1},'(of)([0-9]+)','tokens'));
-        h.stimTypesTotal = str2double(matches{:}{2});
-        h.spikedata{h.maxCh,h.stimTypesTotal,1} = [];
-        h.stimTypeReps = zeros(h.stimTypesTotal,1);
+        h.nStim = str2double(matches{:}{2});
+        h.spikedata{h.maxCh,h.nStim,1} = [];
+        h.stimTypeReps = zeros(h.nStim,1);
     end
     
     % handle: find stim type from ID#,

@@ -66,7 +66,7 @@ START_BAR_HEIGHT = 40; % there must be a smarter way to get this but i don't kno
 TITLE_BAR_HEIGHT = 31; % likewise
 
 handles.pos = floor(res.*[1,1,0.85,1]) + ... % right 85% of screen
-    [handles_master.pos(3),START_BAR_HEIGHT,0,-START_BAR_HEIGHT-TITLE_BAR_HEIGHT]; % leaving room for Win10 elements
+    [handles_master.pos(3),0,0,-START_BAR_HEIGHT-TITLE_BAR_HEIGHT]; % leaving room for Win10 elements
 
 wwidth = handles.pos(3);
 wheight= handles.pos(4);
@@ -97,6 +97,9 @@ varargout{1} = handles.output;
 % --- Executes when user attempts to close figure1.
 function figure1_CloseRequestFcn(hObject, eventdata, handles)
 % delete plot timer before closing figure
-stop(handles.drawAllTimer);
-delete(handles.drawAllTimer);
+try
+    stop(handles.drawAllTimer);
+    delete(handles.drawAllTimer);
+catch
+end
 delete(hObject);

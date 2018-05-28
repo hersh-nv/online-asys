@@ -80,22 +80,40 @@ h.cmttimesbuffer=[h.cmttimesbuffer;cmtTimesBufferTmp];
 % if at least two comments, at least one full trial has passed,
 % and spike data can be trial-aligned and moved into full array
 while size(h.cmtbuffer,1)>=2
+    
+    tic;
 
-    % if first trial of block, get total stim variants from comments
-    % to preallocate spikedata cell array size
+    % if first trial of block, parse comments to find total num stim
+    % conditions, preallocate spikedata cell array size
     if isempty(h.spikedata)
         h.totaltrials = 0;
-        matches=(regexp(h.cmtbuffer{1},'(nDir=)([0-9]+)','tokens'));
-        h.stimTypesTotal = str2double(matches{:}{2});
-        h.spikedata{h.maxCh,h.stimTypesTotal,1} = [];
-        h.stimTypeReps = zeros(h.stimTypesTotal,1);
+        
+        % find all stim conditions
+        matches=regexp(h.cmtbuffer{1},';n([a-z_A-Z]+)=([0-9]+)','tokens');
+        for n = 1:size(matches,2)
+            h.stimLabels{n} = matches{n}{1};
+            h.nStim(n) = str2double(matches{n}{2});
+        end
+        
+        h.stimIdxs = fullfact(h.nStim);
+        h.spikedata{h.maxCh,size(h.stimIdxs,1),1} = [];
+        h.stimElapsed = zeros(size(h.stimIdxs,1),1);
+        
+        % update param select menu(s)
+        h.param1Select.String = h.stimLabels';
     end
     
-    % handle: find stim type from ID#,
-    matches=(regexp(h.cmtbuffer{1},'(indDir=)([0-9]+)','tokens'));
-    stim=str2double(matches{:}{2});
+    % find current stim idx
+    matches=regexp(h.cmtbuffer{1},';ind[a-z_A-Z]+=([0-9]+)','tokens');
+    mask = true(size(h.stimIdxs,1),1);
+    for n = 1:size(matches,2)
+        thisIdxs(n) = str2double(matches{n}{1});
+        mask = mask & h.stimIdxs(:,n)==thisIdxs(n);
+    end
+    
+    stim = find(mask,1);
 
-    stimCount=h.stimTypeReps(stim)+1;
+    stimCount=h.stimElapsed(stim)+1;
     % on each channel,
     for ch=h.minCh:h.maxCh
         % find spikes inside trial start and end
@@ -107,7 +125,7 @@ while size(h.cmtbuffer,1)>=2
             h.spikebuffer{ch}=h.spikebuffer{ch}(spikeidx(end)+1:end);
         end
     end
-    h.stimTypeReps(stim)=h.stimTypeReps(stim)+1;
+    h.stimElapsed(stim)=h.stimElapsed(stim)+1;
     
     % notify user of new trial
     h.totaltrials = h.totaltrials + 1;
@@ -115,7 +133,10 @@ while size(h.cmtbuffer,1)>=2
                 'Total trials = %d\n', ...
                 ], h.totaltrials);
     h.streamStatusText2.String = statusText;
-    fprintf('Stim ID %2d: spikes read.\n',stim);
+    for n = 1:size(matches,2)
+        fprintf("%s %2d | ",h.stimLabels{n},thisIdxs(n));
+    end
+    fprintf(' t = %f.\n',toc*1e3);
 
     % clear this trial (comment) from buffer
     h.cmtbuffer         = h.cmtbuffer(2:end,1);

@@ -22,7 +22,7 @@ function varargout = GUI_Online_Master(varargin)
 
 % Edit the above text to modify the response to help GUI_Online_Master
 
-% Last Modified by GUIDE v2.5 16-May-2018 09:46:50
+% Last Modified by GUIDE v2.5 28-May-2018 22:33:41
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -62,7 +62,7 @@ res = get(groot, 'Screensize');
 START_BAR_HEIGHT = 40; % there must be a smarter way to get this but i don't know how
 TITLE_BAR_HEIGHT = 31; % likewise
 handles.pos = floor(res.*[1,1,0.15,1]) + ... % left 15% of screen
-    [0,START_BAR_HEIGHT,0,-START_BAR_HEIGHT-TITLE_BAR_HEIGHT]; % leaving room for Win10 elements
+    [0,0,0,-START_BAR_HEIGHT-TITLE_BAR_HEIGHT]; % leaving room for Win10 elements
 
 wwidth = handles.pos(3);
 wheight= handles.pos(4);
@@ -79,8 +79,12 @@ handles.streamStatusText1.Position = [20,wheight-90,wwidth-40,20];
 handles.streamStatusText2.String = '';
 handles.streamStatusText2.Position = [20,wheight-300,wwidth-40,200];
 
+handles.plotSettingsPanel.Position = [10,wheight-500,wwidth-20,180];
+handles.channelInputLabel.Position = [10,140,120,20];
+handles.channelInput.Position = [140,140,wwidth-170,20];
+
 handles.streamStimButton.String = 'Stream from Stim PC';
-handles.streamStimButton.Position = [20,wheight-370,wwidth-40,40];
+handles.streamStimButton.Position = [20,80,wwidth-40,40];
 
 handles.plotButton.String = 'Start plot';
 handles.plotButton.Position = [20,20,wwidth-40,40];
@@ -176,17 +180,72 @@ delete(hObject);
 
 % --- Executes on selection change in streamSelectMenu.
 function streamSelectMenu_Callback(hObject, eventdata, handles)
-% hObject    handle to streamSelectMenu (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns streamSelectMenu contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from streamSelectMenu
 
 
 % --- Executes during object creation, after setting all properties.
 function streamSelectMenu_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to streamSelectMenu (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function channelInput_Callback(hObject, eventdata, handles)
+chText = get(hObject,'String');
+if ~isnan(str2double(chText))   % single channel number
+    ch = str2double(chText);
+    if ch==0
+        h.minCh = 1;
+        h.maxCh = 32;
+        fprintf('Channel range set: %d:%d\n',1,32);
+    else
+        h.minCh = str2double(chText);
+        h.maxCh = str2double(chText);
+        fprintf('Channel range set: %d:%d\n',ch,ch);
+    end
+else
+    matches = regexp(chText,'([0-9]+):([0-9]+)','tokens');
+    try
+        minCh = str2double(matches{1}{1});
+        maxCh = str2double(matches{1}{2});
+        if (~isnan(minCh) && minCh>0 && minCh<maxCh)
+            handles.minCh = minCh; fprintf('Channel range set: %d',minCh);
+        end
+        if (~isnan(maxCh) && maxCh>minCh) % no error handling if maxCh is later out of bounds
+            handles.maxCh = maxCh; fprintf(':%d\n',maxCh);
+        end
+    catch
+    end
+end
+guidata(hObject,handles);
+
+
+% --- Executes during object creation, after setting all properties.
+function channelInput_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to channelInput (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in param1Select.
+function param1Select_Callback(hObject, eventdata, handles)
+
+
+% --- Executes during object creation, after setting all properties.
+function param1Select_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to param1Select (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
