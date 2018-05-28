@@ -9,3 +9,7 @@ CBMEX, see http://blackrockmicro.com/neuroscience-research-products/ephys-analys
 ## Folders
 
 tests: scrap and testing code used before developing the rest of the application
+
+## Instructions
+
+Run GUI_Online_Master.m. GUI use should be fairly intuitive, but there'll eventually be a proper user guide here.
