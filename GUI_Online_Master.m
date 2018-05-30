@@ -22,7 +22,7 @@ function varargout = GUI_Online_Master(varargin)
 
 % Edit the above text to modify the response to help GUI_Online_Master
 
-% Last Modified by GUIDE v2.5 28-May-2018 22:33:41
+% Last Modified by GUIDE v2.5 30-May-2018 19:51:27
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -55,6 +55,12 @@ function GUI_Online_Master_OpeningFcn(hObject, eventdata, handles, varargin)
 % Choose default command line output for GUI_Online_Master
 handles.output = hObject;
 
+if nargin>3
+    handles.verbose = logical(varargin{1});
+else
+    handles.verbose = false;
+end
+
 handles = initializeInputParams(handles);
 
 % set master figure size
@@ -80,10 +86,12 @@ handles.streamStatusText2.String = '';
 handles.streamStatusText2.Position = [20,wheight-300,wwidth-40,200];
 
 handles.plotSettingsPanel.Position = [10,wheight-500,wwidth-20,180];
-handles.channelInputLabel.Position = [10,140,120,20];
+handles.channelLabel.Position = [10,140,120,20];
 handles.channelInput.Position = [140,140,wwidth-170,20];
-handles.param1Label.Position = [10,110,120,20];
-handles.param1Select.Position = [140,110,wwidth-170,20];
+handles.timeWinLabel.Position = [10,110,120,20];
+handles.timeWinInput.Position = [140,110,wwidth-170,20];
+handles.param1Label.Position = [10,80,120,20];
+handles.param1Select.Position = [140,80,wwidth-170,20];
 
 handles.streamStimButton.String = 'Stream from Stim PC';
 handles.streamStimButton.Position = [20,80,wwidth-40,40];
@@ -199,6 +207,7 @@ end
 
 % --- Executes on input change in channelInput.
 function channelInput_Callback(hObject, eventdata, handles)
+hObject.BackgroundColor=[1 1 1];
 chText = get(hObject,'String');
 if ~isnan(str2double(chText))   % single channel number
     ch = str2double(chText);
@@ -223,6 +232,7 @@ else
             handles.maxChO = maxChO; fprintf(':%d\n',maxChO);
         end
     catch
+        hObject.BackgroundColor=[0.8 0.2 0.2];
     end
 end
 guidata(hObject,handles);
@@ -247,12 +257,37 @@ function param1Select_Callback(hObject, eventdata, handles)
 
 % --- Executes during object creation, after setting all properties.
 function param1Select_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to param1Select (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
 
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
+
+% --- Executes on selection change in timeWinInput.
+function timeWinInput_Callback(hObject, eventdata, handles)
+hObject.BackgroundColor=[1 1 1];
+chText = get(hObject,'String');
+if ~isnan(str2double(chText))   % single channel number
+    hObject.BackgroundColor = [0.8 0.2 0.2];
+else
+    matches = regexp(chText,'([0-9\.]+):([0-9\.]+)','tokens');
+    try
+        tmin = str2double(matches{1}{1});
+        tmax = str2double(matches{1}{2});
+        if (~isnan(tmin) && tmin>=0 && tmin<tmax)
+            handles.tmin = tmin; fprintf('Time window set: %g',tmin);
+        end
+        if (~isnan(tmax) && tmax>tmin) % no error handling if maxCh is later out of bounds
+            handles.tmax = tmax; fprintf(':%g\n',tmax);
+        end
+    catch
+        hObject.BackgroundColor=[0.8 0.2 0.2];
+    end
+end
+guidata(hObject,handles);
+    
+
+% --- Executes during object creation, after setting all properties.
+function timeWinInput_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end

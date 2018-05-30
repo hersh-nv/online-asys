@@ -72,6 +72,7 @@ wheight= handles.pos(4);
 
 % disable Overview settings until Overview is closed ?
 h1.channelInput.Enable = 'Off';
+h1.timeWinInput.Enable = 'Off';
 h1.param1Select.Enable = 'Off';
 
 handles = startTuningAll(handles);
@@ -102,6 +103,7 @@ function figure1_CloseRequestFcn(hObject, eventdata, handles)
 % reenable Overview settings
 h1 = guidata(handles.figure_master);
 h1.channelInput.Enable = 'On';
+h1.timeWinInput.Enable = 'On';
 h1.param1Select.Enable = 'On';
 
 % delete plot timer before closing figure

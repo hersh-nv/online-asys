@@ -102,16 +102,19 @@ while size(h.cmtbuffer,1)>=2
     end
     h.stimElapsed(thisStim)=h.stimElapsed(thisStim)+1;
     
-    % notify user of new trial
     h.totaltrials = h.totaltrials + 1;
+    
+    % notify user of new trial
     statusText = sprintf(['\n'...
                 'Total trials = %d\n', ...
                 ], h.totaltrials);
     h.streamStatusText2.String = statusText;
-    for n = 1:size(matches,2)
-        fprintf("%s %2d | ",h.stimLabels{n},h.thisIdxs(n));
+    if (h.verbose)
+        for n = 1:size(matches,2)
+            fprintf("%s %2d | ",h.stimLabels{n},h.thisIdxs(n));
+        end
+        fprintf(' t = %f.\n',toc*1e3);
     end
-    fprintf(' t = %f.\n',toc*1e3);
 
     % clear this trial (comment) from buffer
     h.cmtbuffer         = h.cmtbuffer(2:end,1);

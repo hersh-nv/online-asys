@@ -92,7 +92,9 @@ try
     end
     guidata(h.figure1,h);
     guidata(h1.figure1,h1);
-    fprintf("Overview | t = %f, %f\n",stopwatch(1),toc(tuningsw)*1e3);
+    if (h1.verbose)
+        fprintf("Overview | t = %f, %f\n",stopwatch(1),toc(tuningsw)*1e3);
+    end
 catch err
     getReport(err)
     keyboard;

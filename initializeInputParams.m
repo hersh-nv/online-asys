@@ -1,8 +1,11 @@
 function h = initializeInputParams(h)
 
-h.minCh = 33;       % lowest channel number
-h.maxCh = 64;       % highest channel number
+h.minCh = 1;        % lowest channel number
+h.maxCh = 32;       % highest channel number
 h.selCh = h.minCh;
+
+h.minChO = h.minCh; % lowest channel number (for Overview display only)
+h.maxChO = h.maxCh; % highest channel number (for Overview display only)
 
 h.tmin  = 0;        % lower bound on plotted time window (default)
 h.tmax  = 1;        % upper bound on plotted time window (default)
