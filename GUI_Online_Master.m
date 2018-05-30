@@ -65,10 +65,10 @@ handles = initializeInputParams(handles);
 
 % set master figure size
 res = get(groot, 'Screensize');
-START_BAR_HEIGHT = 40; % there must be a smarter way to get this but i don't know how
+TASKBAR_HEIGHT = 40; % there must be a smarter way to get this but i don't know how
 TITLE_BAR_HEIGHT = 31; % likewise
 handles.pos = floor(res.*[1,1,0.15,1]) + ... % left 15% of screen
-    [0,0,0,-START_BAR_HEIGHT-TITLE_BAR_HEIGHT]; % leaving room for Win10 elements
+    [0,TASKBAR_HEIGHT,0,-2*TASKBAR_HEIGHT-TITLE_BAR_HEIGHT]; % leaving room for Win10 elements
 
 wwidth = handles.pos(3);
 wheight= handles.pos(4);

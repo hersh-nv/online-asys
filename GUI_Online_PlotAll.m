@@ -61,11 +61,11 @@ h1 = guidata(handles.figure_master);
 
 % set plotAll figure size
 res = get(groot, 'Screensize');
-START_BAR_HEIGHT = 40; % there must be a smarter way to get this but i don't know how
+TASKBAR_HEIGHT = 40; % there must be a smarter way to get this but i don't know how
 TITLE_BAR_HEIGHT = 31; % likewise
 
 handles.pos = floor(res.*[1,1,0.85,1]) + ... % right 85% of screen
-    [h1.pos(3),0,0,-START_BAR_HEIGHT-TITLE_BAR_HEIGHT]; % leaving room for Win10 elements
+    [h1.pos(3),TASKBAR_HEIGHT,0,-2*TASKBAR_HEIGHT-TITLE_BAR_HEIGHT]; % leaving room for Win10 elements
 
 wwidth = handles.pos(3);
 wheight= handles.pos(4);
