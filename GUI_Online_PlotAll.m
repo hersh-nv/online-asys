@@ -57,8 +57,7 @@ handles.output = hObject;
 
 % Store master handles
 handles.figure_master = varargin{1};
-
-handles_master = guidata(handles.figure_master);
+h1 = guidata(handles.figure_master);
 
 % set plotAll figure size
 res = get(groot, 'Screensize');
@@ -66,10 +65,14 @@ START_BAR_HEIGHT = 40; % there must be a smarter way to get this but i don't kno
 TITLE_BAR_HEIGHT = 31; % likewise
 
 handles.pos = floor(res.*[1,1,0.85,1]) + ... % right 85% of screen
-    [handles_master.pos(3),0,0,-START_BAR_HEIGHT-TITLE_BAR_HEIGHT]; % leaving room for Win10 elements
+    [h1.pos(3),0,0,-START_BAR_HEIGHT-TITLE_BAR_HEIGHT]; % leaving room for Win10 elements
 
 wwidth = handles.pos(3);
 wheight= handles.pos(4);
+
+% disable Overview settings until Overview is closed ?
+h1.channelInput.Enable = 'Off';
+h1.param1Select.Enable = 'Off';
 
 handles = startTuningAll(handles);
 
@@ -96,6 +99,11 @@ varargout{1} = handles.output;
 
 % --- Executes when user attempts to close figure1.
 function figure1_CloseRequestFcn(hObject, eventdata, handles)
+% reenable Overview settings
+h1 = guidata(handles.figure_master);
+h1.channelInput.Enable = 'On';
+h1.param1Select.Enable = 'On';
+
 % delete plot timer before closing figure
 try
     stop(handles.drawAllTimer);

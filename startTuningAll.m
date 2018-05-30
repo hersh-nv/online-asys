@@ -10,15 +10,17 @@ function h = startTuningAll(h)
 h1 = guidata(h.figure_master);
 
 % h.numplots = 32; % hardcoded just for now
-h.numplots = h1.maxCh-h1.minCh + 1;
+h.numplots = h1.maxChO-h1.minChO + 1;
 
-yplots = floor(sqrt(h.numplots/2)); % approx twice as many x plots as y plots
+yplots = round(sqrt(h.numplots/2)); % approx twice as many x plots as y plots
 xplots = ceil(h.numplots/yplots);
 
 figure(h.figure1);      % draw into figure_plotAll
 h.axes{1,h.numplots}=[];
 
 param1 = h1.param1Select.Value;
+
+h.spikerate = h1.spikerate;
 h.tuning = nan(h.numplots,h1.nStim(param1));
 
 for iplot=1:h.numplots
@@ -27,11 +29,13 @@ for iplot=1:h.numplots
     h.lines{iplot} = plot(h.tuning(iplot,:),'-k.','MarkerSize',10);
     
     % adjust axes appearance
-    h.axes{iplot}.XLim = [1 h1.nStim(param1)];
+    h.axes{iplot}.XLimMode = 'auto';
     h.axes{iplot}.YLimMode = 'auto';
-    h.axes{iplot}.YLim(1) = 0;
-    %h.axes{iplot}.XTick=[];
-    %h.axes{iplot}.YTick=[];
+    
+    if iplot==((yplots-1)*xplots+1)   % axes label on bottom left subplot
+        h.axes{iplot}.YLabel.String = 'Firing rate (spikes/s)';
+        h.axes{iplot}.XLabel.String = h1.stimLabels{param1};
+    end
 end
 
 % create plot update timer
@@ -62,31 +66,29 @@ try
     h1 = guidata(h.figure_master);
 
     param1 = h1.param1Select.Value;
-    param1str = h1.stimLabels{param1};
     
     n = h1.thisIdxs(param1);
     mask = h1.stimIdxs(:,param1)==n;
 
     % retrieve spikes and repetition count for this particular condition
     elapsedMask = h1.stimElapsed(h1.thisStim);
-    spikesMasked = h1.spikedata(:,h1.thisStim,elapsedMask);
+    spikesMasked = h1.spikedata(h1.minChO:h1.maxChO,h1.thisStim,elapsedMask);
 
-    h1.spikerate(:,h1.thisStim,elapsedMask) = cellfun(@(x) sum(x>=h1.tmin & x<=h1.tmax),spikesMasked)./(h1.tmax-h1.tmin);
+    h.spikerate(h1.minChO:h1.maxChO,h1.thisStim,elapsedMask) = cellfun(@(x) sum(x>=h1.tmin & x<=h1.tmax),spikesMasked)./(h1.tmax-h1.tmin);
     
     % if averaging across other params
-    h.tuning(:,n) = mean(mean(h1.spikerate(:,mask,:),3),2,'omitnan');
+    h.tuning(:,n) = mean(mean(h.spikerate(h1.minChO:h1.maxChO,mask,:),3),2,'omitnan');
     
     stopwatch(1) = toc(tuningsw)*1e3;
     
     tunedidxs = find(~isnan(h.tuning(1,:)));
     for iplot = 1 : h.numplots
-        if ~isempty(h.tuning)
-            h.lines{iplot}.XData = tunedidxs;
-            h.lines{iplot}.YData = h.tuning(iplot,tunedidxs);
-            % h.axes{iplot}.YLimMode = 'auto';
-        else 
-            
-        end
+        h.lines{iplot}.XData = h1.stimVals(param1,tunedidxs);
+        h.lines{iplot}.YData = h.tuning(iplot,tunedidxs);
+        
+        h.axes{iplot}.XLim = [min(h1.stimVals(param1)),Inf];
+        h.axes{iplot}.YLimMode = 'auto';
+        h.axes{iplot}.YLim(1) = 0;
     end
     guidata(h.figure1,h);
     guidata(h1.figure1,h1);

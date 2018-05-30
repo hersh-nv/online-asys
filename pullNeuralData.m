@@ -15,7 +15,7 @@ if strcmp(h.streamSel,'CBMEX')
     [spikeBufferTmp,~,~] = cbmex('trialdata', 1);
     [cmtBufferTmp, cmtTimesBufferTmp, ~, ~] = cbmex('trialcomment', 1);
 elseif strcmp(h.streamSel,'CBMEX_synthetic')
-    [spikeBufferTmp, cmtBufferTmp,cmtTimesBufferTmp] = cbmex_Synthetic();
+    [spikeBufferTmp, cmtBufferTmp,cmtTimesBufferTmp] = cbmex_Synthetic(3);
 end
 
 % convert from sample counts to seconds
@@ -77,14 +77,12 @@ while size(h.cmtbuffer,1)>=2
     for n = 1:size(matches,2)
         h.thisIdxs(n) = str2double(matches{n}{1});
         mask = mask & h.stimIdxs(:,n)==h.thisIdxs(n);
-    end
+    end    
     
     % find current stim val
     matches=regexp(h.cmtbuffer{1},';this[a-z_A-Z]+=([0-9]+)','tokens');
-    mask = true(size(h.stimIdxs,1),1);
     for n = 1:size(matches,2)
-        h.thisVals(n) = str2double(matches{n}{1});
-        mask = mask & h.stimIdxs(:,n)==h.thisIdxs(n);
+        h.stimVals(n,h.thisIdxs(n)) = str2double(matches{n}{1});
     end
     
     thisStim = find(mask,1);

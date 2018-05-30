@@ -197,30 +197,30 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-
+% --- Executes on input change in channelInput.
 function channelInput_Callback(hObject, eventdata, handles)
 chText = get(hObject,'String');
 if ~isnan(str2double(chText))   % single channel number
     ch = str2double(chText);
     if ch==0
-        h.minCh = 1;
-        h.maxCh = 32;
+        h.minChO = 1;
+        h.maxChO = 32;
         fprintf('Channel range set: %d:%d\n',1,32);
     else
-        h.minCh = str2double(chText);
-        h.maxCh = str2double(chText);
+        h.minChO = str2double(chText);
+        h.maxChO = str2double(chText);
         fprintf('Channel range set: %d:%d\n',ch,ch);
     end
 else
     matches = regexp(chText,'([0-9]+):([0-9]+)','tokens');
     try
-        minCh = str2double(matches{1}{1});
-        maxCh = str2double(matches{1}{2});
-        if (~isnan(minCh) && minCh>0 && minCh<maxCh)
-            handles.minCh = minCh; fprintf('Channel range set: %d',minCh);
+        minChO = str2double(matches{1}{1});
+        maxChO = str2double(matches{1}{2});
+        if (~isnan(minChO) && minChO>0 && minChO<maxChO)
+            handles.minChO = minChO; fprintf('Channel range set: %d',minChO);
         end
-        if (~isnan(maxCh) && maxCh>minCh) % no error handling if maxCh is later out of bounds
-            handles.maxCh = maxCh; fprintf(':%d\n',maxCh);
+        if (~isnan(maxChO) && maxChO>minChO) % no error handling if maxCh is later out of bounds
+            handles.maxChO = maxChO; fprintf(':%d\n',maxChO);
         end
     catch
     end
