@@ -82,6 +82,8 @@ handles.streamStatusText2.Position = [20,wheight-300,wwidth-40,200];
 handles.plotSettingsPanel.Position = [10,wheight-500,wwidth-20,180];
 handles.channelInputLabel.Position = [10,140,120,20];
 handles.channelInput.Position = [140,140,wwidth-170,20];
+handles.param1Label.Position = [10,110,120,20];
+handles.param1Select.Position = [140,110,wwidth-170,20];
 
 handles.streamStimButton.String = 'Stream from Stim PC';
 handles.streamStimButton.Position = [20,80,wwidth-40,40];

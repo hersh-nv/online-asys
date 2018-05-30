@@ -13,7 +13,7 @@ set(h.streamStatusText1,'ForegroundColor',[0,0,0]);
 
 % create timer
 h.pullTimer = timer('Period',h.pullUpdatePeriod,...
-    'TimerFcn',{@pullCBMEX,h},...
+    'TimerFcn',{@pullNeuralData,h},...
     'ExecutionMode','fixedSpacing'...
     );
 
@@ -37,6 +37,7 @@ guidata(h.figure1,h);
 end
 
 %% Timer callback
+% ================= CURRENTLY UNUSED ======================================
 function pullCBMEX(~, ~, h)
 try
 % Callback function for pullTimer. On every call, it checks the CBMEX

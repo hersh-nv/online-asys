@@ -19,25 +19,27 @@ figure(h.figure1);      % draw into figure_plotAll
 h.axes{1,h.numplots}=[];
 
 param1 = h1.param1Select.Value;
+h.tuning = nan(h.numplots,h1.nStim(param1));
 
 for iplot=1:h.numplots
     % create and save handles to axes and lineplot separately
     h.axes{iplot} = subplot(yplots,xplots,iplot);
-    h.lines{iplot} = plot(1:h1.nStim(param1),zeros(1,h1.nStim(param1)));
+    h.lines{iplot} = plot(h.tuning(iplot,:),'-k.','MarkerSize',10);
     
     % adjust axes appearance
     h.axes{iplot}.XLim = [1 h1.nStim(param1)];
     h.axes{iplot}.YLimMode = 'auto';
     h.axes{iplot}.YLim(1) = 0;
-    h.axes{iplot}.XTick=[];
-    h.axes{iplot}.YTick=[];
+    %h.axes{iplot}.XTick=[];
+    %h.axes{iplot}.YTick=[];
 end
 
 % create plot update timer
 
 h.drawAllTimer = timer('Period',h1.drawUpdatePeriod,...
-    'TimerFcn',{@updateTuningAll,h},...
-    'ExecutionMode','fixedSpacing'...
+    'TimerFcn',{@updateTuningAll,h.figure1},...
+    'ExecutionMode','fixedSpacing',...
+    'StartDelay',0.5 ...
     );
 start(h.drawAllTimer);
 
@@ -47,54 +49,48 @@ start(h.drawAllTimer);
 end
 
 %% timer callback
-function updateTuningAll(~,~,h)
+function updateTuningAll(~,~,f)
 % Callback function for drawAllTimer. On every call, it recalculates tuning
 % data for every channel (using spike data in h.spikedata) and updates the
 % channel overview figure accordingly.
 
-tic;
-
-% fetch master handles, where spikedata is stored
-h1 = guidata(h.figure_master);
-
-param1 = h1.param1Select.Value;
-param1str = h1.stimLabels{param1};
-
 try 
-    for n = 1:h1.nStim(param1)
-        mask = h1.stimIdxs(:,param1)==n;
-        spikesMasked = h1.spikedata(:,mask,:);
-        elapsedMask = h1.stimElapsed(mask);
-        
-        spikeSum(:,:) = sum(cellfun(@(x) sum(x>=h1.tmin & x<=h1.tmax),spikesMasked),3);
-        tuningTmp = spikeSum./(repmat(elapsedMask',[size(spikeSum,1),1])*(h1.tmax-h1.tmin));
-        
-        % if averaging across other params
-        tuning(:,n) = mean(tuningTmp,2,'omitnan');
-        
+    tuningsw = tic; % tuning stopwatch
 
-        
-%         spikeSum(:,:) = cellfun(@(x) sum(x>=h1.tmin & x<=h1.tmax),spikesMasked(:,logical(elapsedMask)));
-        
-%         % add trial reps if available
-%         for elap = 1:(max(elapsedMask)-1)
-%             spikeSum(:,:) = spikeSum(:,:) + cellfun(@(x) sum(x>=h1.tmin & x<=h1.tmax),spikesMasked(:,elapsedMask==elap+1,elap+1));
-%         end
-    end
-    % tuning = mean(cellfun(@(x) sum(x>=h1.tmin & x<=h1.tmax),h1.spikedata),3)./(h1.tmax-h1.tmin);
-    tuning(isnan(tuning)) = 0;
+    % fetch both handles
+    h = guidata(f);
+    h1 = guidata(h.figure_master);
 
+    param1 = h1.param1Select.Value;
+    param1str = h1.stimLabels{param1};
+    
+    n = h1.thisIdxs(param1);
+    mask = h1.stimIdxs(:,param1)==n;
+
+    % retrieve spikes and repetition count for this particular condition
+    elapsedMask = h1.stimElapsed(h1.thisStim);
+    spikesMasked = h1.spikedata(:,h1.thisStim,elapsedMask);
+
+    h1.spikerate(:,h1.thisStim,elapsedMask) = cellfun(@(x) sum(x>=h1.tmin & x<=h1.tmax),spikesMasked)./(h1.tmax-h1.tmin);
+    
+    % if averaging across other params
+    h.tuning(:,n) = mean(mean(h1.spikerate(:,mask,:),3),2,'omitnan');
+    
+    stopwatch(1) = toc(tuningsw)*1e3;
+    
+    tunedidxs = find(~isnan(h.tuning(1,:)));
     for iplot = 1 : h.numplots
-        % axes(h.axes{iplot});
-        if ~isempty(tuning)
-            h.lines{iplot}.YData = tuning(iplot,:);
-            h.axes{iplot}.YLimMode = 'auto';
-            h.axes{iplot}.YLim(1) = 0;
+        if ~isempty(h.tuning)
+            h.lines{iplot}.XData = tunedidxs;
+            h.lines{iplot}.YData = h.tuning(iplot,tunedidxs);
+            % h.axes{iplot}.YLimMode = 'auto';
         else 
             
         end
     end
-    fprintf("Overview | t = %f\n",toc*1e3);
+    guidata(h.figure1,h);
+    guidata(h1.figure1,h1);
+    fprintf("Overview | t = %f, %f\n",stopwatch(1),toc(tuningsw)*1e3);
 catch err
     getReport(err)
     keyboard;
