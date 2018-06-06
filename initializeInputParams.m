@@ -11,7 +11,7 @@ h.tmin  = 0;        % lower bound on plotted time window (default)
 h.tmax  = 1;        % upper bound on plotted time window (default)
 
 h.pullUpdatePeriod = 0.25;     % how often to pull spike data     
-h.drawUpdatePeriod = 2;       % how often to update figures
+h.drawUpdatePeriod = 1;       % how often to update figures
 
 % h.nRep  = 20;  % maximum number of stimuli repetitions for each type
 h.sampling_freq = 30000;    % sampling rate for conversion of spiketimes to sec

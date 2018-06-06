@@ -42,7 +42,8 @@ end
 
 h.drawAllTimer = timer('Period',h1.drawUpdatePeriod,...
     'TimerFcn',{@updateTuningAll,h.figure1},...
-    'ExecutionMode','fixedSpacing',...
+    'BusyMode','queue', ...
+    'ExecutionMode','fixedRate',...
     'StartDelay',0.5 ...
     );
 start(h.drawAllTimer);
@@ -90,10 +91,11 @@ try
         h.axes{iplot}.YLimMode = 'auto';
         h.axes{iplot}.YLim(1) = 0;
     end
+    stopwatch(2) = toc(tuningsw)*1e3;
     guidata(h.figure1,h);
     guidata(h1.figure1,h1);
     if (h1.verbose)
-        fprintf("Overview | t = %f, %f\n",stopwatch(1),toc(tuningsw)*1e3);
+        fprintf("Overview | t = %f, %f, %f\n",stopwatch(1),stopwatch(2),toc(tuningsw)*1e3);
     end
 catch err
     getReport(err)
