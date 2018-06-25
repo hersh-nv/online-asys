@@ -28,6 +28,9 @@ for iplot=1:h.numplots
     h.axes{iplot} = subplot(yplots,xplots,iplot);
     h.lines{iplot} = plot(h.tuning(iplot,:),'-k.','MarkerSize',10);
     
+    % attach Focus callback
+    h.axes{iplot}.ButtonDownFcn = {@openFocusWindow,iplot};
+    
     % adjust axes appearance
     h.axes{iplot}.XLimMode = 'auto';
     h.axes{iplot}.YLimMode = 'auto';

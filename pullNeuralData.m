@@ -1,5 +1,4 @@
 function pullNeuralData(~, ~, f)
-try
 % Callback function for pullTimer. On every call, it checks the CBMEX
 % network buffer and empties the neural and comment data into an
 % accumulating local buffer. After every complete trial, the data is moved
@@ -9,6 +8,7 @@ try
 % See also STARTCBMEX
 
 % get handles
+try
 h = guidata(f);
 
 if strcmp(h.streamSel,'CBMEX')

@@ -97,7 +97,6 @@ set(hObject,'Visible','On');
 % Get default command line output from handles structure
 varargout{1} = handles.output;
 
-
 % --- Executes when user attempts to close figure1.
 function figure1_CloseRequestFcn(hObject, eventdata, handles)
 % reenable Overview settings
@@ -113,3 +112,5 @@ try
 catch
 end
 delete(hObject);
+
+

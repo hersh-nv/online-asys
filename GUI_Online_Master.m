@@ -95,6 +95,7 @@ handles.param1Select.Position = [140,80,wwidth-170,20];
 
 handles.streamStimButton.String = 'Stream from Stim PC';
 handles.streamStimButton.Position = [20,80,wwidth-40,40];
+handles.streamStimButton.Enable = 'Off';
 
 handles.plotButton.String = 'Start plot';
 handles.plotButton.Position = [20,20,wwidth-40,40];
@@ -185,6 +186,10 @@ function figure1_CloseRequestFcn(hObject, eventdata, handles)
 % when closing fig, this closereqfcn makes sure CBMEX is closed and timers
 % deleted in case the user hasn't pressed the Stop Stream button
 endStream();
+try
+delete(handles.figure_plotAll);
+catch
+end
 delete(hObject);
 
 
