@@ -6,3 +6,12 @@ function f=openFocusWindow(varargin)
 
 ch=varargin{3};
 fprintf('Focusing on %g!\n',ch);
+
+f = figure(ch+2);
+
+% psth
+subplot(2,1,1);
+
+
+% raster
+subplot(2,1,2);
