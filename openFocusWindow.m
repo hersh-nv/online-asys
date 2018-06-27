@@ -11,6 +11,8 @@ f = figure(ch+2);
 
 % psth
 subplot(2,1,1);
+titlestr = sprintf('Channel %g',ch);
+title(titlestr);
 
 
 % raster

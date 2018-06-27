@@ -22,7 +22,7 @@ function varargout = GUI_Online_Master(varargin)
 
 % Edit the above text to modify the response to help GUI_Online_Master
 
-% Last Modified by GUIDE v2.5 30-May-2018 19:51:27
+% Last Modified by GUIDE v2.5 27-Jun-2018 09:17:02
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -92,6 +92,9 @@ handles.timeWinLabel.Position = [10,110,120,20];
 handles.timeWinInput.Position = [140,110,wwidth-170,20];
 handles.param1Label.Position = [10,80,120,20];
 handles.param1Select.Position = [140,80,wwidth-170,20];
+handles.param2Label.Position = [10,50,120,20];
+handles.param2Select.Position = [140,50,wwidth-170,20];
+handles.param2ValSelect.Position = [140,20,wwidth-170,20];
 
 handles.streamStimButton.String = 'Stream from Stim PC';
 handles.streamStimButton.Position = [20,80,wwidth-40,40];
@@ -258,6 +261,9 @@ end
 
 % --- Executes on selection change in param1Select.
 function param1Select_Callback(hObject, eventdata, handles)
+stimLabelsMinusParam1 = handles.stimLabels;
+stimLabelsMinusParam1(hObject.Value)=[];
+handles.param2Select.String = ['All';stimLabelsMinusParam1'];
 
 
 % --- Executes during object creation, after setting all properties.
@@ -293,6 +299,38 @@ guidata(hObject,handles);
 
 % --- Executes during object creation, after setting all properties.
 function timeWinInput_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in param2Select.
+function param2Select_Callback(hObject, eventdata, handles)
+if hObject.Value>1      % not 'All'
+    % Populate param2ValSelect menu
+    param2Val = find(strcmp(hObject.String{hObject.Value},handles.stimLabels));
+    stimVals = handles.stimVals(param2Val,:);
+    stimVals=stimVals(~isnan(stimVals));
+    handles.param2ValSelect.String=['Show all';cellfun(@num2str,num2cell(stimVals),'un',0)'];
+    handles.param2ValSelect.Enable = 'On';
+else
+    % Disable param2ValSelect menu
+    handles.param2ValSelect.String = {'All'};
+    handles.param2ValSelect.Enable = 'Off';
+end
+
+% --- Executes during object creation, after setting all properties.
+function param2Select_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in param2ValSelect.
+function param2ValSelect_Callback(hObject, eventdata, handles)
+
+% --- Executes during object creation, after setting all properties.
+function param2ValSelect_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end

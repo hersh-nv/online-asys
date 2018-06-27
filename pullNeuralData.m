@@ -66,9 +66,14 @@ while size(h.cmtbuffer,1)>=2
         h.spikedata{h.maxCh,size(h.stimIdxs,1),1} = [];
         h.spikerate = nan(size(h.spikedata));
         h.stimElapsed = zeros(size(h.stimIdxs,1),1);
+        h.stimVals = nan(n, max(h.nStim));
         
         % update param select menu(s)
         h.param1Select.String = h.stimLabels';
+        h.param1Select.Enable = 'On';
+        h.param2Select.String = ['All';h.stimLabels(2:end)'];
+        h.param2Select.Enable = 'On';
+        h.param2ValSelect.String = 'All';
     end
     
     % find current stim idx
