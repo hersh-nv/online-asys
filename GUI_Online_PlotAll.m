@@ -74,6 +74,8 @@ wheight= handles.pos(4);
 h1.channelInput.Enable = 'Off';
 h1.timeWinInput.Enable = 'Off';
 h1.param1Select.Enable = 'Off';
+h1.param2Select.Enable = 'Off';
+h1.param2ValSelect.Enable = 'Off';
 
 handles = startTuningAll(handles);
 
@@ -100,10 +102,17 @@ varargout{1} = handles.output;
 % --- Executes when user attempts to close figure1.
 function figure1_CloseRequestFcn(hObject, eventdata, handles)
 % reenable Overview settings
-h1 = guidata(handles.figure_master);
-h1.channelInput.Enable = 'On';
-h1.timeWinInput.Enable = 'On';
-h1.param1Select.Enable = 'On';
+try
+    h1 = guidata(handles.figure_master);
+    h1.channelInput.Enable = 'On';
+    h1.timeWinInput.Enable = 'On';
+    h1.param1Select.Enable = 'On';
+    h1.param2Select.Enable = 'On';
+    if h1.param2Select.Value>1
+        h1.param2ValSelect.Enable = 'On';
+    end
+catch
+end
 
 % delete plot timer before closing figure
 try

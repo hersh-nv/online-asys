@@ -94,6 +94,7 @@ handles.param1Label.Position = [10,80,120,20];
 handles.param1Select.Position = [140,80,wwidth-170,20];
 handles.param2Label.Position = [10,50,120,20];
 handles.param2Select.Position = [140,50,wwidth-170,20];
+handles.param2ValLabel.Position = [10,20,wwidth-170,20];
 handles.param2ValSelect.Position = [140,20,wwidth-170,20];
 
 handles.streamStimButton.String = 'Stream from Stim PC';
@@ -315,6 +316,7 @@ if hObject.Value>1      % not 'All'
     handles.param2ValSelect.Enable = 'On';
 else
     % Disable param2ValSelect menu
+    handles.param2ValSelect.Value = 1;
     handles.param2ValSelect.String = {'All'};
     handles.param2ValSelect.Enable = 'Off';
 end

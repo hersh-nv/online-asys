@@ -73,7 +73,7 @@ while size(h.cmtbuffer,1)>=2
         h.param1Select.Enable = 'On';
         h.param2Select.String = ['All';h.stimLabels(2:end)'];
         h.param2Select.Enable = 'On';
-        h.param2ValSelect.String = 'All';
+        h.param2ValSelect.String = {'All'};
     end
     
     % find current stim idx
