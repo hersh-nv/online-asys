@@ -24,6 +24,10 @@ h.cmtbuffer = [];
 h.cmttimesbuffer = [];
 h.spikedata={};
 
+% initialise figure handles
+h.figure_plotAll = [];
+h.figure_focus = {};
+
 %guidata(hObject,h);
 
 end

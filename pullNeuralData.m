@@ -124,6 +124,17 @@ while size(h.cmtbuffer,1)>=2
     % clear this trial (comment) from buffer
     h.cmtbuffer         = h.cmtbuffer(2:end,1);
     h.cmttimesbuffer    = h.cmttimesbuffer(2:end,1);
+    
+    % update figures
+    %if h.overviewWinOpen
+    %    updateTuningAll(h.figure_plotAll);
+    %end
+    isFocusOpen = cellfun(@ishandle,h.figure_focus,'un',0);
+    isFocusOpen = ~cellfun(@isempty,isFocusOpen);
+    for ifocus = find(isFocusOpen)
+        focusWindow = focusWindowSwitchyard();
+        focusWindow.update(h.figure_focus{ifocus});
+    end
 end
 
 % Update handles structure

@@ -9,20 +9,17 @@ function h = startTuningAll(h)
 
 h1 = guidata(h.figure_master);
 
-% h.numplots = 32; % hardcoded just for now
+% initialise plots
 h.numplots = h1.maxChO-h1.minChO + 1;
-
 yplots = round(sqrt(h.numplots/2)); % approx twice as many x plots as y plots
 xplots = ceil(h.numplots/yplots);
 
 figure(h.figure1);      % draw into figure_plotAll
 h.axes{1,h.numplots}=[];
 
+% initialise subplots
 param1 = h1.param1Select.Value;
-
-
 h.spikerate = h1.spikerate;
-
 h.tuning = nan(h.numplots,h1.nStim(param1));
 
 h.param2 = find(strcmp(h1.param2Select.String{h1.param2Select.Value},h1.stimLabels));
@@ -52,7 +49,8 @@ for iplot=1:h.numplots
     end
     
     % attach Focus callback
-    h.axes{iplot}.ButtonDownFcn = {@openFocusWindow,iplot,h.figure_master};
+    focusWindow = focusWindowSwitchyard();
+    h.axes{iplot}.ButtonDownFcn = {focusWindow.open,iplot,h.figure_master};
     
     % adjust axes appearance
     h.axes{iplot}.XLimMode = 'auto';
