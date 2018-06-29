@@ -181,7 +181,7 @@ function plotButton_Callback(hObject, eventdata, handles)
 % can add it to its 'handles' structure. plotAll outputs its own figure
 % handles so the next line can do vice versa. Both GUI handles contain a
 % reference to other figure.
-handles.figure_plotAll = GUI_Online_PlotAll(handles.figure1);
+handles.figure_overview = GUI_Online_Overview(handles.figure1);
 guidata(hObject,handles);
 
 
