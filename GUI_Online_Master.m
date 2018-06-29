@@ -63,7 +63,10 @@ end
 
 handles = initializeInputParams(handles);
 
-% set master figure size
+% NOTE: positioning is a bit finicky and it seems like OuterPosition takes
+% into account some misc Windows 10 UI elements of unknown size. haven't
+% yet found a more reliable way to tile windows to occupy 100% of desktop
+% space while leaving room for Windows taskbar, startbar, etc...
 res = get(groot, 'Screensize');
 TASKBAR_HEIGHT = 40; % there must be a smarter way to get this but i don't know how
 TITLE_BAR_HEIGHT = 31; % likewise
@@ -181,8 +184,12 @@ function plotButton_Callback(hObject, eventdata, handles)
 % can add it to its 'handles' structure. plotAll outputs its own figure
 % handles so the next line can do vice versa. Both GUI handles contain a
 % reference to other figure.
-handles.figure_overview = GUI_Online_Overview(handles.figure1);
-guidata(hObject,handles);
+
+%handles.figure_overview = GUI_Online_Overview(handles.figure1);
+%guidata(hObject,handles);
+
+overviewWindow = overviewWindowSwitchyard();
+overviewWindow.open(handles.figure1);
 
 
 % --- Executes when user attempts to close figure1.

@@ -36,8 +36,8 @@ if ~isempty(cmtBufferTmp)
     for cmt=1:size(cmtBufferTmp,1)
         match(cmt)=isempty(regexp(cmtBufferTmp{cmt},'F='));
     end
-    cmtBufferTmp      = cmtBufferTmp(find(match));
-    cmtTimesBufferTmp = cmtTimesBufferTmp(find(match));
+    cmtBufferTmp      = cmtBufferTmp(match);
+    cmtTimesBufferTmp = cmtTimesBufferTmp(match);
 end
 
 % move cbmex comment data into local buffer
@@ -114,26 +114,28 @@ while size(h.cmtbuffer,1)>=2
                 'Total trials = %d\n', ...
                 ], h.totaltrials);
     h.streamStatusText2.String = statusText;
-    if (h.verbose)
-        for n = 1:size(matches,2)
-            fprintf("%s %2d | ",h.stimLabels{n},h.thisIdxs(n));
-        end
-        fprintf(' t = %f.\n',toc*1e3);
-    end
 
     % clear this trial (comment) from buffer
     h.cmtbuffer         = h.cmtbuffer(2:end,1);
     h.cmttimesbuffer    = h.cmttimesbuffer(2:end,1);
     
     % update figures
-    %if h.overviewWinOpen
-    %    updateTuningAll(h.figure_plotAll);
-    %end
+    if ishandle(h.figure_overview)
+       overviewWindow = overviewWindowSwitchyard();
+       overviewWindow.update(h.figure_overview);
+    end
     isFocusOpen = cellfun(@ishandle,h.figure_focus,'un',0);
     isFocusOpen = ~cellfun(@isempty,isFocusOpen);
     for ifocus = find(isFocusOpen)
         focusWindow = focusWindowSwitchyard();
         focusWindow.update(h.figure_focus{ifocus});
+    end
+    
+    if (h.verbose)
+        for n = 1:size(matches,2)
+            fprintf("%s %2d | ",h.stimLabels{n},h.thisIdxs(n));
+        end
+        fprintf(' t = %f.\n',toc*1e3);
     end
 end
 
