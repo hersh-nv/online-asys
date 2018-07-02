@@ -198,7 +198,7 @@ function figure1_CloseRequestFcn(hObject, eventdata, handles)
 % deleted in case the user hasn't pressed the Stop Stream button
 endStream();
 try
-delete(handles.figure_plotAll);
+delete(handles.figure_overview);
 catch
 end
 delete(hObject);

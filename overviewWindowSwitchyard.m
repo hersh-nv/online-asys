@@ -47,15 +47,15 @@ h.tuning = nan(h.numplots,h1.nStim(h.param1));
 yplots = round(sqrt(h.numplots/2)); % approx twice as many x plots as y plots
 xplots = ceil(h.numplots/yplots);
 h.param2 = find(strcmp(h1.param2Select.String{h1.param2Select.Value},h1.stimLabels));
-param2Idx = str2double(h1.param2ValSelect.String{h1.param2ValSelect.Value});
-if isnan(param2Idx)
-    h.param2Val = 0;
+param2Val = str2double(h1.param2ValSelect.String{h1.param2ValSelect.Value});
+if isnan(param2Val)
+    h.param2ValIdx = 0;
 else
-    h.param2Val = find(param2Idx==h1.stimVals(h.param2,:));
+    h.param2ValIdx = find(param2Val==h1.stimVals(h.param2,:));
 end
 
 if h1.param2Select.Value > 1       % Param 2 selected
-    if h.param2Val == 0             % "Show all"
+    if h.param2ValIdx == 0             % "Show all"
         numCurves = h1.nStim(h.param2);
         h.tuning = repmat(h.tuning,[1 1 numCurves]);
     end 
@@ -64,10 +64,12 @@ end
 for iplot=1:h.numplots
     % create and save handles to axes and lineplot separately
     h.axes{iplot} = subplot(yplots,xplots,iplot);
-    if h1.param2Select.Value>1 && h.param2Val == 0             % "Show all"
+    if h1.param2Select.Value>1 && h.param2ValIdx == 0             % "Show all"
         hold on
         for iCurve = 1:numCurves
-            h.lines{iplot,iCurve} = plot(h.tuning(iplot,:),'-.','MarkerSize',10);
+            h.lines{iplot,iCurve} = plot(h.tuning(iplot,:), ...#
+                'Marker','.', ...
+                'MarkerSize',5);
         end
         hold off
     else
@@ -110,22 +112,36 @@ end
 h.spikerate = h.spikerate/(h1.tmax-h1.tmin);
 
 for n=1:h1.nStim(h.param1)
-    mask = h1.stimIdxs(:,h.param1)==n;
-    spikerateMasked = h.spikerate(h1.minChO:h1.maxChO,mask,:);
     if h1.param2Select.Value == 1   % 'All': average across all other params
+        mask = h1.stimIdxs(:,h.param1)==n;
+        spikerateMasked = h.spikerate(h1.minChO:h1.maxChO,mask,:);
+        h.tuning(:,n) = mean(mean(spikerateMasked,3,'omitnan'),2,'omitnan');
+    elseif h1.param2Select.Value>1 && h.param2ValIdx==0 % Param 2 selected: 'All'
+        % param 2 value (n2) defines another condition for the mask
+        for n2 = 1:h1.nStim(h.param2)
+            mask = (h1.stimIdxs(:,h.param1)==n) & (h1.stimIdxs(:,h.param2)==n2);
+            spikerateMasked = h.spikerate(h1.minChO:h1.maxChO,mask,:);
+            h.tuning(:,n,n2) = mean(mean(spikerateMasked,3,'omitnan'),2,'omitnan');
+        end
+    else  % Param 2 selected and val selected
+        % param 2 value (n2) defines another condition for the mask
+        n2 = h.param2ValIdx;
+        mask = (h1.stimIdxs(:,h.param1)==n) & (h1.stimIdxs(:,h.param2)==n2);
+        spikerateMasked = h.spikerate(h1.minChO:h1.maxChO,mask,:);
         h.tuning(:,n) = mean(mean(spikerateMasked,3,'omitnan'),2,'omitnan');
     end
 end
-if h1.param2Select.Value>1 && h.param2Val == 0
-    tunedidxs = find(~isnan(h.tuning(1,:,n2)));
-else
+if ~(h1.param2Select.Value>1 && h.param2ValIdx == 0)
     tunedidxs = find(~isnan(h.tuning(1,:)));
 end
 
 for iplot = 1 : h.numplots
-    if h1.param2Select.Value>1 && h.param2Val == 0
-        h.lines{iplot,n2}.XData = h1.stimVals(h.param1,tunedidxs);
-        h.lines{iplot,n2}.YData = h.tuning(iplot,tunedidxs,n2);
+    if h1.param2Select.Value>1 && h.param2ValIdx == 0
+        for n2 = 1:h1.nStim(h.param2)
+            tunedidxs = find(~isnan(h.tuning(1,:,n2)));
+            h.lines{iplot,n2}.XData = h1.stimVals(h.param1,tunedidxs);
+            h.lines{iplot,n2}.YData = h.tuning(iplot,tunedidxs,n2);
+        end
     else
         h.lines{iplot}.XData = h1.stimVals(h.param1,tunedidxs);
         h.lines{iplot}.YData = h.tuning(iplot,tunedidxs);
@@ -150,7 +166,7 @@ try
     h = guidata(f);
     h1 = guidata(h.figure_master);
     
-    if h1.param2Select.Value>1 && h.param2Val>0 && h.param2Val~=h1.thisIdxs(h.param2)
+    if h1.param2Select.Value>1 && h.param2ValIdx>0 && h.param2ValIdx~=h1.thisIdxs(h.param2)
         % skip!
     else
 
@@ -188,15 +204,15 @@ try
             % apply second-order mask
             spikerateMasked2 = spikerateMasked(h1.minChO:h1.maxChO,mask2,:);
 
-            if (h.param2Val==0) % "Show all"
-                h.tuning(:,n,n2) = mean(mean(spikerateMasked2,3),2,'omitnan');
+            if (h.param2ValIdx==0) % "Show all"
+                h.tuning(:,n,n2) = mean(mean(spikerateMasked2,3,'omitnan'),2,'omitnan');
             else
-                h.tuning(:,n) = mean(mean(spikerateMasked2,3),2,'omitnan');
+                h.tuning(:,n) = mean(mean(spikerateMasked2,3,'omitnan'),2,'omitnan');
             end
         end
         stopwatch(1) = toc(tuningsw)*1e3;
 
-        if h1.param2Select.Value>1 && h.param2Val == 0
+        if h1.param2Select.Value>1 && h.param2ValIdx == 0
             tunedidxs = find(~isnan(h.tuning(1,:,n2)));
         else
             tunedidxs = find(~isnan(h.tuning(1,:)));
@@ -204,7 +220,7 @@ try
 
         stopwatch(2) = toc(tuningsw)*1e3;
         for iplot = 1 : h.numplots
-            if h1.param2Select.Value>1 && h.param2Val == 0
+            if h1.param2Select.Value>1 && h.param2ValIdx == 0
                 h.lines{iplot,n2}.XData = h1.stimVals(h.param1,tunedidxs);
                 h.lines{iplot,n2}.YData = h.tuning(iplot,tunedidxs,n2);
             else
