@@ -58,6 +58,11 @@ if h1.param2Select.Value > 1       % Param 2 selected
     if h.param2ValIdx == 0             % "Show all"
         numCurves = h1.nStim(h.param2);
         h.tuning = repmat(h.tuning,[1 1 numCurves]);
+        
+        % new colour order
+        newCO=[linspace(0,1,numCurves)', ...
+            zeros(numCurves,1), ...
+            linspace(1,0,numCurves)'];
     end 
 end
 
@@ -65,6 +70,9 @@ for iplot=1:h.numplots
     % create and save handles to axes and lineplot separately
     h.axes{iplot} = subplot(yplots,xplots,iplot);
     if h1.param2Select.Value>1 && h.param2ValIdx == 0             % "Show all"
+        % apply color order
+        h.axes{iplot}.ColorOrder = newCO;
+        % draw each curve
         hold on
         for iCurve = 1:numCurves
             h.lines{iplot,iCurve} = plot(h.tuning(iplot,:), ...#

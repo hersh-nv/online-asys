@@ -50,6 +50,10 @@ if (h1.param2Select.Value==1 || h1.param2ValSelect.Value>1)
 else
     h.numCurves = h1.nStim(h.param2);
     h.spiketrain{h.numplots,h.numCurves} = [];
+    % new colour order
+    newCO=[linspace(0,1,h.numCurves)', ...
+        zeros(h.numCurves,1), ...
+        linspace(1,0,h.numCurves)'];
 end
 
 for n = 1:h.numplots
@@ -84,6 +88,9 @@ for n = 1:h.numplots
 
     % %%%% >1 curves, showing all param 2 values
     else
+        % apply color order
+        ax = gca;
+        ax.ColorOrder = newCO;
         hold on
         for n2 = 1:h.numCurves
             mask = (h1.stimIdxs(:,h.param1)==n) & (h1.stimIdxs(:,h.param2) == n2);
