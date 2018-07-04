@@ -378,5 +378,15 @@ end
 
 % --- Executes on button press in focusWinSingletonCheck.
 function focusWinSingletonCheck_Callback(hObject, eventdata, handles)
+% firstOpenFocus=find(handles.figure_focusMat,1);
+% if hObject.Value==1 && ~isempty(firstOpenFocus)
+%     focusWindow = focusWindowSwitchyard;
+%     for ifocus=find(handles.figure_focusMat)
+%         if ifocus~=firstOpenFocus
+%             disp(ifocus)
+%             focusWindow.close(handles.figure_focus{ifocus});
+%         end
+%     end
+% end
 handles.focusSettings.singletonCheck = hObject.Value;
 guidata(hObject,handles);

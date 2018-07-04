@@ -29,6 +29,9 @@ f.OuterPosition = f_master.OuterPosition;  % initialise to same position as mast
 f.OuterPosition(1) = f_master.Position(3); % then shift to right 85% of screen
 f.OuterPosition(3) = res(3)-f.OuterPosition(1)+7;
 
+wwidth = f.Position(3);
+wheight= f.Position(4);
+
 % disable Overview settings until Overview is closed ?
 h1.channelInput.Enable = 'Off';
 h1.timeWinInput.Enable = 'Off';
@@ -65,9 +68,15 @@ end
 yplots = round(sqrt(h.numplots/2)); % approx twice as many x plots as y plots
 xplots = ceil(h.numplots/yplots);
 
+wwidthp=0.95; % proportional window width and
+wheightp=0.9; % height for the subplots to be drawn inside
 for iplot=1:h.numplots
     % create and save handles to axes and lineplot separately
-    h.axes{iplot} = subplot(yplots,xplots,iplot);
+    pos(1) = mod(iplot-1,xplots)*wwidthp/xplots + (1-wwidthp);
+    pos(2) = (1+wwidthp)/2-wheightp/yplots*ceil(iplot/xplots);
+    pos(3) = wwidthp/xplots*0.75;
+    pos(4) = wheightp/yplots*0.9;
+    h.axes{iplot} = subplot('Position',pos);
     if h1.param2Select.Value>1 && h.param2ValIdx == 0             % "Show all"
         % apply color order
         h.axes{iplot}.ColorOrder = newCO;
@@ -94,6 +103,9 @@ for iplot=1:h.numplots
     if iplot==((yplots-1)*xplots+1)   % axes label on bottom left subplot
         h.axes{iplot}.YLabel.String = 'Firing rate (spikes/s)';
         h.axes{iplot}.XLabel.String = h1.stimLabels{h.param1};
+    end
+    if ceil(iplot/xplots)~=yplots    % x axis ticks on bottom edge
+        h.axes{iplot}.XTick=[];
     end
 end
 
@@ -232,14 +244,14 @@ else
 
         h.axes{iplot}.XLim = [min(h1.stimVals(h.param1,:)),Inf];
         h.axes{iplot}.YLimMode = 'auto';
-        h.axes{iplot}.YLim(1) = 0;
+%         h.axes{iplot}.YLim(1) = 0; % super slow line for some reason
     end
 
     guidata(h.figure1,h);
     guidata(h1.figure1,h1);
-    if (h1.verbose)
-        fprintf("Overview | t = %f, %f, %f\n",stopwatch(1),stopwatch(2),toc(tuningsw)*1e3);
-    end
+%     if (h1.verbose)
+%         fprintf("Overview | t = %f, %f, %f\n",stopwatch(1),stopwatch(2),toc(tuningsw)*1e3);
+%     end
 end
 catch err
     getReport(err)

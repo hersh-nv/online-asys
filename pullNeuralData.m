@@ -48,7 +48,7 @@ h.cmttimesbuffer=[h.cmttimesbuffer;cmtTimesBufferTmp];
 % and spike data can be trial-aligned and moved into full array
 while size(h.cmtbuffer,1)>=2
     
-    tic;
+    sw = tic;
 
     % if first trial of block, parse comments to find total num stim
     % conditions, preallocate spikedata cell array size
@@ -92,7 +92,9 @@ while size(h.cmtbuffer,1)>=2
     
     thisStim = find(mask,1);
     h.thisStim = thisStim; % condition of just-elapsed trial
-
+    
+    swtoc(1)=toc(sw)*1e3;
+    
     stimCount=h.stimElapsed(thisStim)+1;
     % on each channel,
     for ch=h.minCh:h.maxCh
@@ -106,8 +108,8 @@ while size(h.cmtbuffer,1)>=2
         end
     end
     h.stimElapsed(thisStim)=h.stimElapsed(thisStim)+1;
-    
     h.totaltrials = h.totaltrials + 1;
+    swtoc(2)=toc(sw)*1e3;
     
     % notify user of new trial
     statusText = sprintf(['\n'...
@@ -119,11 +121,13 @@ while size(h.cmtbuffer,1)>=2
     h.cmtbuffer         = h.cmtbuffer(2:end,1);
     h.cmttimesbuffer    = h.cmttimesbuffer(2:end,1);
     
+    swtoc(3)=toc(sw)*1e3;
     % update figures
     if ishandle(h.figure_overview)
        overviewWindow = overviewWindowSwitchyard();
        overviewWindow.update(h.figure_overview);
     end
+    swtoc(4)=toc(sw)*1e3;
 %     isFocusOpen = cellfun(@ishandle,h.figure_focus,'un',0);
 %     isFocusOpen = ~cellfun(@isempty,isFocusOpen);
     for ifocus = find(h.figure_focusMat)
@@ -131,11 +135,16 @@ while size(h.cmtbuffer,1)>=2
         focusWindow.update(h.figure_focus{ifocus});
     end
     
+    swtoc(5)=toc(sw)*1e3;
     if (h.verbose)
         for n = 1:size(matches,2)
             fprintf("%s %2d | ",h.stimLabels{n},h.thisIdxs(n));
         end
-        fprintf(' t = %f.\n',toc*1e3);
+        fprintf(' t =');
+        for iprint=1:length(swtoc)
+            fprintf(' %3.1f',swtoc(iprint));
+        end
+        fprintf('.\n');
     end
 end
 

@@ -24,6 +24,8 @@ if h1.focusSettings.singletonCheck
     for existingFocus = find(h1.figure_focusMat)
         closeFocusWindow(h1.figure_focus{existingFocus});
     end
+    h1.figure_focus={};
+    h1.figure_focusMat=[];
 end
 f = figure('Name',titlestr,'NumberTitle','off');
 h.figure1 = f;
@@ -210,15 +212,14 @@ end
 % % ========== CLOSE FUNCTION =============================================
 function closeFocusWindow(f,~)
 % clear Focus flag in handles structure so GUI no longer tries to update it
-try
+
 h = guidata(f);
 h1= guidata(h.figure_master);
 
 h1.figure_focus{h.ch}=[];
 h1.figure_focusMat(h.ch)=0;
 guidata(h.figure_master,h1);
-catch
-end
+
 % then close figure
 delete(f);
 end
