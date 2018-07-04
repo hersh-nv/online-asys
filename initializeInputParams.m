@@ -23,8 +23,12 @@ h.cmtbuffer = [];
 h.cmttimesbuffer = [];
 h.spikedata={};
 
+h.focusSettings.singletonCheck = 0;
+h.focusSettings.psthBinSize = 5;
+
 % initialise figure handles
 h.figure_overview = {};
 h.figure_focus = {};
+h.figure_focusMat = [];
 
 end

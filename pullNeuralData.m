@@ -124,9 +124,9 @@ while size(h.cmtbuffer,1)>=2
        overviewWindow = overviewWindowSwitchyard();
        overviewWindow.update(h.figure_overview);
     end
-    isFocusOpen = cellfun(@ishandle,h.figure_focus,'un',0);
-    isFocusOpen = ~cellfun(@isempty,isFocusOpen);
-    for ifocus = find(isFocusOpen)
+%     isFocusOpen = cellfun(@ishandle,h.figure_focus,'un',0);
+%     isFocusOpen = ~cellfun(@isempty,isFocusOpen);
+    for ifocus = find(h.figure_focusMat)
         focusWindow = focusWindowSwitchyard();
         focusWindow.update(h.figure_focus{ifocus});
     end

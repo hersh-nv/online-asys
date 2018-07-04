@@ -22,7 +22,7 @@ function varargout = GUI_Online_Master(varargin)
 
 % Edit the above text to modify the response to help GUI_Online_Master
 
-% Last Modified by GUIDE v2.5 27-Jun-2018 09:17:02
+% Last Modified by GUIDE v2.5 04-Jul-2018 15:52:50
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -88,17 +88,25 @@ handles.streamStatusText1.Position = [20,wheight-90,wwidth-40,20];
 handles.streamStatusText2.String = '';
 handles.streamStatusText2.Position = [20,wheight-300,wwidth-40,200];
 
-handles.plotSettingsPanel.Position = [10,wheight-500,wwidth-20,180];
-handles.channelLabel.Position = [10,140,120,20];
-handles.channelInput.Position = [140,140,wwidth-170,20];
-handles.timeWinLabel.Position = [10,110,120,20];
-handles.timeWinInput.Position = [140,110,wwidth-170,20];
-handles.param1Label.Position = [10,80,120,20];
-handles.param1Select.Position = [140,80,wwidth-170,20];
-handles.param2Label.Position = [10,50,120,20];
-handles.param2Select.Position = [140,50,wwidth-170,20];
-handles.param2ValLabel.Position = [10,20,wwidth-170,20];
-handles.param2ValSelect.Position = [140,20,wwidth-170,20];
+psHeight = 220;
+handles.plotSettingsPanel.Position = [10,wheight-500,wwidth-20,psHeight];
+handles.channelLabel.Position =     [10, psHeight-40, 120,20];
+handles.channelInput.Position =     [140,psHeight-40, wwidth-170,20];
+handles.timeWinLabel.Position =     [10, psHeight-70, 120,20];
+handles.timeWinInput.Position =     [140,psHeight-70, wwidth-170,20];
+handles.param1Label.Position =      [10, psHeight-100,120,20];
+handles.param1Select.Position =     [140,psHeight-100,wwidth-170,20];
+handles.param2Label.Position =      [10, psHeight-130,120,20];
+handles.param2Select.Position =     [140,psHeight-130,wwidth-170,20];
+handles.param2ValLabel.Position =   [10, psHeight-160,wwidth-170,20];
+handles.param2ValSelect.Position =  [140,psHeight-160,wwidth-170,20];
+handles.ebCheck.Position =          [10, psHeight-190,wwidth-20,20];
+
+fsHeight = 200;
+handles.focusSettingsPanel.Position = [10,wheight-540-psHeight,wwidth-20,fsHeight];
+handles.focusWinSingletonCheck.Position = [10,fsHeight-40,wwidth-20,20];
+handles.psthBinSizeLabel.Position = [10, fsHeight-70, 120, 20];
+handles.psthBinSizeInput.Position = [140,fsHeight-70, wwidth-170,20];
 
 handles.streamStimButton.String = 'Stream from Stim PC';
 handles.streamStimButton.Position = [20,80,wwidth-40,40];
@@ -343,3 +351,32 @@ function param2ValSelect_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in ebCheck.
+function ebCheck_Callback(hObject, eventdata, handles)
+
+
+
+function psthBinSizeInput_Callback(hObject, eventdata, handles)
+val = str2num(hObject.String);
+if val>0
+    handles.focusSettings.psthBinSize = val;
+    guidata(hObject,handles);
+    hObject.BackgroundColor = [1 1 1];
+else
+    hObject.BackgroundColor = [1 0 0];
+end
+
+
+% --- Executes during object creation, after setting all properties.
+function psthBinSizeInput_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in focusWinSingletonCheck.
+function focusWinSingletonCheck_Callback(hObject, eventdata, handles)
+handles.focusSettings.singletonCheck = hObject.Value;
+guidata(hObject,handles);

@@ -39,13 +39,6 @@ h1.param2ValSelect.Enable = 'Off';
 
 % save some data to handles
 h.param1 = h1.param1Select.Value;
-h.numplots = h1.maxChO-h1.minChO + 1;
-h.spikerate = h1.spikerate; % copy empty array of correct size
-h.tuning = nan(h.numplots,h1.nStim(h.param1));
-
-% start drawing subplots
-yplots = round(sqrt(h.numplots/2)); % approx twice as many x plots as y plots
-xplots = ceil(h.numplots/yplots);
 h.param2 = find(strcmp(h1.param2Select.String{h1.param2Select.Value},h1.stimLabels));
 param2Val = str2double(h1.param2ValSelect.String{h1.param2ValSelect.Value});
 if isnan(param2Val)
@@ -53,7 +46,9 @@ if isnan(param2Val)
 else
     h.param2ValIdx = find(param2Val==h1.stimVals(h.param2,:));
 end
-
+h.numplots = h1.maxChO-h1.minChO + 1;
+h.spikerate = h1.spikerate; % copy empty array of correct size
+h.tuning = nan(h.numplots,h1.nStim(h.param1));
 if h1.param2Select.Value > 1       % Param 2 selected
     if h.param2ValIdx == 0             % "Show all"
         numCurves = h1.nStim(h.param2);
@@ -65,6 +60,10 @@ if h1.param2Select.Value > 1       % Param 2 selected
             linspace(1,0,numCurves)'];
     end 
 end
+
+% start drawing subplots
+yplots = round(sqrt(h.numplots/2)); % approx twice as many x plots as y plots
+xplots = ceil(h.numplots/yplots);
 
 for iplot=1:h.numplots
     % create and save handles to axes and lineplot separately
@@ -182,20 +181,14 @@ else
     elapsedMask = h1.stimElapsed(h1.thisStim);
     thisSpikes = h1.spikedata(h1.minChO:h1.maxChO,h1.thisStim,elapsedMask);
 
-%     % fill spikerate with NaNs as it increases
-%     [srx,sry,srz] = size(h.spikerate);
-%     if elapsedMask>srz
-%         h.spikerate(:,:,srz+1:elapsedMask) = nan(sthisrx,sry);
-%     end
-
     % calculate spikerate for this stim
     for ch = h1.minChO:h1.maxChO
         h.spikerate(ch,h1.thisStim,elapsedMask) = sum(thisSpikes{ch}>=h1.tmin & thisSpikes{ch}<h1.tmax);
     end
 
-
     if h1.param2Select.Value == 1   % 'All': average across all other params
-        % retrieve mask for all conditions that match this one in param 1 value
+        % mask is idx of all stims with the same param 1 value as current
+        % stim
         n = h1.thisIdxs(h.param1);
         mask = h1.stimIdxs(:,h.param1)==n;
 
@@ -204,7 +197,8 @@ else
 
         h.tuning(:,n) = mean(mean(spikerateMasked,3,'omitnan'),2,'omitnan');
     else
-        % retrieve mask for all conditions that match this one in param 1 value
+        % mask is idx of all stims with the same param 1 and param 2 value
+        % as current stim
         n = h1.thisIdxs(h.param1);
         n2 = h1.thisIdxs(h.param2);
         mask = h1.stimIdxs(:,h.param1)==n & h1.stimIdxs(:,h.param2)==n2;

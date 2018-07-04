@@ -20,16 +20,22 @@ h1 = guidata(f_master);
 
 % create figure, save to handles
 titlestr = sprintf('Channel %g',ch);
+if h1.focusSettings.singletonCheck
+    for existingFocus = find(h1.figure_focusMat)
+        closeFocusWindow(h1.figure_focus{existingFocus});
+    end
+end
 f = figure('Name',titlestr,'NumberTitle','off');
 h.figure1 = f;
 h1.figure_focus{ch}=f;
+h1.figure_focusMat(ch)=1;
 
 % set figure position and other properties
 f.CloseRequestFcn = @closeFocusWindow;
 
 % save some data to handles
 h.ch = ch;
-h.binSize = 0.02; % (s)
+h.binSize = h1.focusSettings.psthBinSize/1000; % (s)
 h.hMax = 20*h.binSize;
 h.param1 = h1.param1Select.Value;
 h.param2 = find(strcmp(h1.param2Select.String{h1.param2Select.Value},h1.stimLabels));
@@ -70,20 +76,16 @@ for n = 1:h.numplots
         h.hists{n} = histogram(h.spiketrain{n},0:h.binSize:1, ...
             'DisplayStyle','stairs'); % TODO: custom bin size and time window
         elapsedSum = sum(h1.stimElapsed(mask));
-        if elapsedSum>0 % if any trials have occurred, scale y-axis down by trial count
+        if elapsedSum>0 % if any trials have occurred, scale spikenum down by trial count
             h.hists{n}.BinCounts = h.hists{n}.BinCounts./elapsedSum;
         end
+        
+        % change colour to black
+        h.hists{n}.EdgeColor=[0 0 0];
 
-        % rescale all axes if necessary
+        % increase the rescale bound if necessary
         if max(h.hists{n}.BinCounts)>h.hMax
             h.hMax = max(h.hists{n}.BinCounts)*1.1;
-%             for n2 = 1:n
-%                 ax = h.hists{n2}.Parent;
-%                 ax.YLim = [0 h.hMax];
-%             end
-%         else % just scale this one
-%             ax = h.hists{n}.Parent;
-%             ax.YLim = [0 h.hMax];
         end
 
     % %%%% >1 curves, showing all param 2 values
@@ -91,6 +93,7 @@ for n = 1:h.numplots
         % apply color order
         ax = gca;
         ax.ColorOrder = newCO;
+        % draw curves
         hold on
         for n2 = 1:h.numCurves
             mask = (h1.stimIdxs(:,h.param1)==n) & (h1.stimIdxs(:,h.param2) == n2);
@@ -99,7 +102,7 @@ for n = 1:h.numplots
             h.hists{n,n2} = histogram(h.spiketrain{n,n2},0:h.binSize:1, ...
                 'DisplayStyle','stairs'); % TODO: custom bin size and time window
             elapsedSum = sum(h1.stimElapsed(mask));
-            if elapsedSum>0 % if any trials have occurred, scale y-axis down by trial count
+            if elapsedSum>0 % if any trials have occurred, scale spikenum down by trial count
                 h.hists{n,n2}.BinCounts = h.hists{n,n2}.BinCounts./elapsedSum;
             end
             
@@ -114,13 +117,11 @@ for n = 1:h.numplots
     param1Label = h1.stimLabels{h.param1};
     labelstr = [param1Label,' ',num2str(h1.stimVals(h.param1,n))];
     title(labelstr);
-%     ylim=get(ax,'yLim');
-%     text(0.05,ylim(2)*0.9,labelstr);
 end
 
 % rescale and set labels
 for n = 1:h.numplots
-    ax = h.hists{n,1}.Parent;
+    ax = h.hists{n}.Parent;
     ax.YLim = [0 h.hMax];
     if n==((yplots-1)*xplots+1)   % axes label on bottom left subplot
         ax.YLabel.String = 'Firing rate (spikes/bin)';
@@ -209,12 +210,15 @@ end
 % % ========== CLOSE FUNCTION =============================================
 function closeFocusWindow(f,~)
 % clear Focus flag in handles structure so GUI no longer tries to update it
+try
 h = guidata(f);
 h1= guidata(h.figure_master);
 
 h1.figure_focus{h.ch}=[];
+h1.figure_focusMat(h.ch)=0;
 guidata(h.figure_master,h1);
-
+catch
+end
 % then close figure
 delete(f);
 end
