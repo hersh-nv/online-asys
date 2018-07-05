@@ -11,6 +11,9 @@ function pullNeuralData(~, ~, f)
 try
 h = guidata(f);
 
+swtoc=[];
+sw = tic;
+
 if strcmp(h.streamSel,'CBMEX')
     [spikeBufferTmp,~,~] = cbmex('trialdata', 1);
     [cmtBufferTmp, cmtTimesBufferTmp, ~, ~] = cbmex('trialcomment', 1);
@@ -47,8 +50,6 @@ h.cmttimesbuffer=[h.cmttimesbuffer;cmtTimesBufferTmp];
 % if at least two comments, at least one full trial has passed,
 % and spike data can be trial-aligned and moved into full array
 while size(h.cmtbuffer,1)>=2
-    
-    sw = tic;
 
     % if first trial of block, parse comments to find total num stim
     % conditions, preallocate spikedata cell array size
@@ -74,6 +75,8 @@ while size(h.cmtbuffer,1)>=2
         h.param2Select.String = ['All';h.stimLabels(2:end)'];
         h.param2Select.Enable = 'On';
         h.param2ValSelect.String = {'All'};
+        
+        h.plotButton.Enable = 'On';
     end
     
     % find current stim idx
@@ -93,23 +96,21 @@ while size(h.cmtbuffer,1)>=2
     thisStim = find(mask,1);
     h.thisStim = thisStim; % condition of just-elapsed trial
     
-    swtoc(1)=toc(sw)*1e3;
     
     stimCount=h.stimElapsed(thisStim)+1;
-    % on each channel,
+    % on each channel ...
     for ch=h.minCh:h.maxCh
-        % find spikes inside trial start and end
-        spikeidx=find(h.spikebuffer{ch}>=h.cmttimesbuffer(1) & h.spikebuffer{ch}<h.cmttimesbuffer(2));
+        % ... find spikes inside trial start and end
+        spikeidx=(h.spikebuffer{ch}>=h.cmttimesbuffer(1) & h.spikebuffer{ch}<h.cmttimesbuffer(2));
         if ~isempty(spikeidx)
-            % subtract trial start time, move to spikedata and clear from
-            % spikebuffer
+            % subtract trial start time, move to spikedata, clear from
+            % buffer
             h.spikedata{ch,thisStim,stimCount}=h.spikebuffer{ch}(spikeidx)-h.cmttimesbuffer(1);
             h.spikebuffer{ch}=h.spikebuffer{ch}(spikeidx(end)+1:end);
         end
     end
     h.stimElapsed(thisStim)=h.stimElapsed(thisStim)+1;
     h.totaltrials = h.totaltrials + 1;
-    swtoc(2)=toc(sw)*1e3;
     
     % notify user of new trial
     statusText = sprintf(['\n'...
@@ -121,21 +122,24 @@ while size(h.cmtbuffer,1)>=2
     h.cmtbuffer         = h.cmtbuffer(2:end,1);
     h.cmttimesbuffer    = h.cmttimesbuffer(2:end,1);
     
-    swtoc(3)=toc(sw)*1e3;
+%     % %%%%%%%%%%% for debugging skipped elapsed values %%%%%%%%%%%%%%
+%     [sdy, sdx, sdz] = size(h.spikedata);
+%     elapsed = squeeze(1-cellfun(@isempty,h.spikedata(1,:,:)));
+%     a = find(elapsed(:,
+%     % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
     % update figures
     if ishandle(h.figure_overview)
        overviewWindow = overviewWindowSwitchyard();
        overviewWindow.update(h.figure_overview);
     end
-    swtoc(4)=toc(sw)*1e3;
-%     isFocusOpen = cellfun(@ishandle,h.figure_focus,'un',0);
-%     isFocusOpen = ~cellfun(@isempty,isFocusOpen);
     for ifocus = find(h.figure_focusMat)
         focusWindow = focusWindowSwitchyard();
         focusWindow.update(h.figure_focus{ifocus});
     end
+    swtoc(end+1)=toc(sw)*1e3;
     
-    swtoc(5)=toc(sw)*1e3;
+    % print to command window
     if (h.verbose)
         for n = 1:size(matches,2)
             fprintf("%s %2d | ",h.stimLabels{n},h.thisIdxs(n));

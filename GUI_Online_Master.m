@@ -22,7 +22,7 @@ function varargout = GUI_Online_Master(varargin)
 
 % Edit the above text to modify the response to help GUI_Online_Master
 
-% Last Modified by GUIDE v2.5 04-Jul-2018 15:52:50
+% Last Modified by GUIDE v2.5 05-Jul-2018 14:53:33
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -79,7 +79,7 @@ wheight= handles.pos(4);
 % set element sizes relative to master figure position/size
 handles.streamSelectMenu.Position = [20, wheight-65, 80, 40];
 
-handles.streamButton.String = 'Start NSP stream';
+handles.streamButton.String = 'Start stream';
 handles.streamButton.Position = [120 wheight-50 wwidth-140 30];
 
 handles.streamStatusText1.String = '';
@@ -88,25 +88,30 @@ handles.streamStatusText1.Position = [20,wheight-90,wwidth-40,20];
 handles.streamStatusText2.String = '';
 handles.streamStatusText2.Position = [20,wheight-300,wwidth-40,200];
 
-psHeight = 220;
+psHeight = 270;
 handles.plotSettingsPanel.Position = [10,wheight-500,wwidth-20,psHeight];
 handles.channelLabel.Position =     [10, psHeight-40, 120,20];
 handles.channelInput.Position =     [140,psHeight-40, wwidth-170,20];
-handles.timeWinLabel.Position =     [10, psHeight-70, 120,20];
-handles.timeWinInput.Position =     [140,psHeight-70, wwidth-170,20];
+handles.timeWinLabel.Position =     [10, psHeight-65, 120,20];
+handles.timeWinInput.Position =     [140,psHeight-65, wwidth-170,20];
 handles.param1Label.Position =      [10, psHeight-100,120,20];
 handles.param1Select.Position =     [140,psHeight-100,wwidth-170,20];
-handles.param2Label.Position =      [10, psHeight-130,120,20];
-handles.param2Select.Position =     [140,psHeight-130,wwidth-170,20];
-handles.param2ValLabel.Position =   [10, psHeight-160,wwidth-170,20];
-handles.param2ValSelect.Position =  [140,psHeight-160,wwidth-170,20];
-handles.ebCheck.Position =          [10, psHeight-190,wwidth-20,20];
+handles.param2Label.Position =      [10, psHeight-125,120,20];
+handles.param2Select.Position =     [140,psHeight-125,wwidth-170,20];
+handles.param2ValLabel.Position =   [10, psHeight-150,wwidth-170,20];
+handles.param2ValSelect.Position =  [140,psHeight-150,wwidth-170,20];
+handles.ebCheck.Position =          [10, psHeight-180,wwidth-20,20];
+handles.yScaleLabel.Position =      [10, psHeight-212,wwidth-20,20];
+handles.yScaleInput.Position =      [10, psHeight-230,50,20];
+handles.yScaleAutoCheck.Position =  [70, psHeight-230,40,20];
+handles.yScaleUniformCheck.Position=[120,psHeight-230,wwidth-130,20];
 
 fsHeight = 200;
-handles.focusSettingsPanel.Position = [10,wheight-540-psHeight,wwidth-20,fsHeight];
+handles.focusSettingsPanel.Position = [10,wheight-540-fsHeight,wwidth-20,fsHeight];
 handles.focusWinSingletonCheck.Position = [10,fsHeight-40,wwidth-20,20];
-handles.psthBinSizeLabel.Position = [10, fsHeight-70, 120, 20];
-handles.psthBinSizeInput.Position = [140,fsHeight-70, wwidth-170,20];
+handles.rasterCheck.Position      = [10. fsHeight-60, wwidth-20. 20];
+handles.psthBinSizeLabel.Position = [10, fsHeight-90,120, 20];
+handles.psthBinSizeInput.Position = [140,fsHeight-90,wwidth-170,20];
 
 handles.streamStimButton.String = 'Stream from Stim PC';
 handles.streamStimButton.Position = [20,80,wwidth-40,40];
@@ -137,7 +142,7 @@ varargout{1} = handles.output;
 function streamButton_Callback(hObject, eventdata, handles)
 
 % If button is being used to start stream
-if strcmp(hObject.String,'Start NSP stream')
+if strcmp(hObject.String,'Start stream')
     % Check which stream type is selected
     streamOpts = handles.streamSelectMenu.String;
     handles.streamSel = streamOpts{handles.streamSelectMenu.Value};
@@ -159,7 +164,6 @@ if strcmp(hObject.String,'Start NSP stream')
             handles.streamStatusText1 = ForegroundColor',[0.2 0.8 0.2];
             handles.streamStatusText2.String = '';
             handles.streamButton.String = 'Close stream';
-            handles.plotButton.Enable = 'On';
         end
     elseif strcmp(handles.streamSel,'CBMEX_synthetic')
         err = startCBMEXsynthetic(handles);
@@ -170,13 +174,12 @@ if strcmp(hObject.String,'Start NSP stream')
             handles.streamStatusText1.ForegroundColor = [0.2 0.8 0.2];
             handles.streamStatusText2.String = '';
             handles.streamButton.String = 'Close stream';
-            handles.plotButton.Enable = 'On';
         end
     end
 % Else, the button stops the stream
 else
     endStream();
-    handles.streamButton.String = 'Start NSP stream';
+    handles.streamButton.String = 'Start stream';
     handles.streamStatusText1.String = 'Stream closed';
     handles.streamStatusText1.ForegroundColor = [0 0 0];
 end
@@ -236,24 +239,28 @@ chText = get(hObject,'String');
 if ~isnan(str2double(chText))   % single channel number
     ch = str2double(chText);
     if ch==0
-        h.minChO = 1;
-        h.maxChO = 32;
-        fprintf('Channel range set: %d:%d\n',1,32);
+        handles.minChO = handles.minCh;
+        handles.maxChO = handles.maxCh;
+        fprintf('Channel range set: %d:%d\n',handles.minChO,handles.maxChO);
+    elseif ch>=handles.minCh && ch<=handles.maxCh
+        handles.minChO = str2double(chText);
+        handles.maxChO = str2double(chText);
+        fprintf('Channel range set: %d\n',ch);
     else
-        h.minChO = str2double(chText);
-        h.maxChO = str2double(chText);
-        fprintf('Channel range set: %d:%d\n',ch,ch);
+        hObject.BackgroundColor=[0.8 0.2 0.2];
     end
 else
     matches = regexp(chText,'([0-9]+):([0-9]+)','tokens');
     try
         minChO = str2double(matches{1}{1});
         maxChO = str2double(matches{1}{2});
-        if (~isnan(minChO) && minChO>0 && minChO<maxChO)
-            handles.minChO = minChO; fprintf('Channel range set: %d',minChO);
-        end
-        if (~isnan(maxChO) && maxChO>minChO) % no error handling if maxCh is later out of bounds
-            handles.maxChO = maxChO; fprintf(':%d\n',maxChO);
+        if (~isnan(minChO) && ~isnan(maxChO) && ...
+                maxChO>minChO && minChO>=1 && maxChO<=handles.maxCh)
+            handles.minChO = minChO; 
+            handles.maxChO = maxChO;     
+            fprintf('Channel range set: %d:%d\n',minChO,maxChO);
+        else
+            hObject.BackgroundColor=[0.8 0.2 0.2];
         end
     catch
         hObject.BackgroundColor=[0.8 0.2 0.2];
@@ -359,7 +366,7 @@ function ebCheck_Callback(hObject, eventdata, handles)
 
 
 function psthBinSizeInput_Callback(hObject, eventdata, handles)
-val = str2num(hObject.String);
+val = str2double(hObject.String);
 if val>0
     handles.focusSettings.psthBinSize = val;
     guidata(hObject,handles);
@@ -378,15 +385,73 @@ end
 
 % --- Executes on button press in focusWinSingletonCheck.
 function focusWinSingletonCheck_Callback(hObject, eventdata, handles)
-% firstOpenFocus=find(handles.figure_focusMat,1);
-% if hObject.Value==1 && ~isempty(firstOpenFocus)
-%     focusWindow = focusWindowSwitchyard;
-%     for ifocus=find(handles.figure_focusMat)
-%         if ifocus~=firstOpenFocus
-%             disp(ifocus)
-%             focusWindow.close(handles.figure_focus{ifocus});
-%         end
-%     end
-% end
+firstOpenFocus=find(handles.figure_focusMat,1);
+if hObject.Value==1 && ~isempty(firstOpenFocus)
+    focusWindow = focusWindowSwitchyard;
+    for ifocus=find(handles.figure_focusMat)
+        if ifocus~=firstOpenFocus
+            disp(ifocus)
+            focusWindow.close(handles.figure_focus{ifocus});
+        end
+    end
+end
 handles.focusSettings.singletonCheck = hObject.Value;
 guidata(hObject,handles);
+
+
+% --- Executes on button press in rasterCheck.
+function rasterCheck_Callback(hObject, eventdata, handles)
+
+
+% --- Executes on button press in yScaleUniformCheck.
+function yScaleUniformCheck_Callback(hObject, eventdata, handles)
+% hObject    handle to yScaleUniformCheck (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of yScaleUniformCheck
+
+
+% --- Executes on button press in yScaleAutoCheck.
+function yScaleAutoCheck_Callback(hObject, eventdata, handles)
+if hObject.Value==1
+    handles.yScaleInput.Enable='Off';
+    handles.yScaleUniformCheck.Enable = 'On';
+else
+    handles.yScaleInput.Enable='On';
+    handles.yScaleUniformCheck.Value = 1;
+    handles.yScaleUniformCheck.Enable = 'Off';
+end
+
+
+function yScaleInput_Callback(hObject, eventdata, handles)
+hObject.BackgroundColor=[1 1 1]; % reset bg colour
+chText = hObject.String;
+matches = regexp(chText,'([0-9]+):([0-9]+)','tokens');
+try
+    yMin = str2double(matches{1}{1});
+    yMax = str2double(matches{1}{2});
+    if (~isnan(yMin) && ~isnan(yMax) && yMax > yMin)
+        handles.overviewSettings.yMin = yMin;
+        handles.overviewSettings.yMax = yMax;
+        fprintf('Channel range set: %d:%d\n',yMin,yMax);
+        
+        % readjust overview window if it's open
+%         if ishandle(handles.figure_overview)
+    else
+        hObject.BackgroundColor=[0.8 0.2 0.2];
+    end
+catch
+    hObject.BackgroundColor=[0.8 0.2 0.2];
+end
+guidata(hObject,handles);
+% Hints: get(hObject,'String') returns contents of yScaleInput as text
+%        str2double(get(hObject,'String')) returns contents of yScaleInput as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function yScaleInput_CreateFcn(hObject, eventdata, handles)
+
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end

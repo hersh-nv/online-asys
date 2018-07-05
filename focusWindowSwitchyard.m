@@ -52,9 +52,17 @@ end
 h.numplots = h1.nStim(h.param1);
 yplots = round(sqrt(h.numplots/2)); % approx twice as many x plots as y plots
 xplots = ceil(h.numplots/yplots);
+% if h1.rasterCheck.Value
+%     h.numplots = h.numplots * 2; % double, to fit in raster plots
+%     yplots = yplots*2
+% end
+
 
 if (h1.param2Select.Value==1 || h1.param2ValSelect.Value>1)
     h.spiketrain{h.numplots} = [];
+    h.spiketrain2{h.numplots}=[];
+    h.tc{h.numplots}=[]; % trial count
+    h.tcnum=ones(1,h.numplots);
 else
     h.numCurves = h1.nStim(h.param2);
     h.spiketrain{h.numplots,h.numCurves} = [];
@@ -64,8 +72,27 @@ else
         linspace(1,0,h.numCurves)'];
 end
 
+n = 1:h.numplots;
+subplotidxs = floor((n-1)/xplots)*xplots+n; % only when using rasters
+wwidthp=0.95; % proportional window width and
+wheightp=0.9; % height for the subplots to be drawn inside
 for n = 1:h.numplots
-    subplot(yplots,xplots,n);
+    if h1.rasterCheck.Value
+        % subplotidx = floor((n-1)/xplots)*xplots+n; % take every second row
+        % subplot(yplots*2,xplots,subplotidxs(n));
+        pos(1) = mod(n-1,xplots)*wwidthp/xplots + (1-wwidthp);
+        pos(2) = (1+wwidthp)/2-wheightp/yplots*ceil(n/xplots) + wheightp/yplots*0.2;
+        pos(3) = wwidthp/xplots*0.75;
+        pos(4) = wheightp/yplots*0.6;
+        subplot('Position',pos);
+    else
+        %subplot(yplots,xplots,n);
+        pos(1) = mod(n-1,xplots)*wwidthp/xplots + (1-wwidthp);
+        pos(2) = (1+wwidthp)/2-wheightp/yplots*ceil(n/xplots);
+        pos(3) = wwidthp/xplots*0.75;
+        pos(4) = wheightp/yplots*0.9;
+        subplot('Position',pos);
+    end
     
     % %%%% single curve
     if (h1.param2Select.Value==1 || h1.param2ValSelect.Value>1)
@@ -119,6 +146,46 @@ for n = 1:h.numplots
     param1Label = h1.stimLabels{h.param1};
     labelstr = [param1Label,' ',num2str(h1.stimVals(h.param1,n))];
     title(labelstr);
+    
+    % raster curves
+    if h1.rasterCheck.Value
+        % subplotidx = ceil(n/xplots)*xplots+n; % every other row w/o PSTHs
+        % subplot(yplots*2,xplots,subplotidx);
+        pos(1) = mod(n-1,xplots)*wwidthp/xplots + (1-wwidthp);
+        pos(2) = (1+wwidthp)/2-wheightp/yplots*ceil(n/xplots);
+        pos(3) = wwidthp/xplots*0.75;
+        pos(4) = wheightp/yplots*0.2;
+        subplot('Position',pos);
+        
+        % %%%% single curve
+        if (h1.param2Select.Value==1 || h1.param2ValSelect.Value>1)
+            % draw invisible data first, just to produce plot
+            h.rasters{n} = plot(0,0,'k.');
+            % use same mask from spiketrain calculation,
+            % only difference is each trial's spiketrain isnt being merged
+            spikesMasked = h1.spikedata(ch,mask,:);
+            for stim=1:size(spikesMasked,2)
+                for elap=1:size(spikesMasked,3)
+                    if ~isempty(spikesMasked{1,stim,elap})
+                        h.spiketrain2{n}=[h.spiketrain2{n},spikesMasked{1,stim,elap}];
+                        h.tc{n}=[h.tc{n},h.tcnum(n)*ones(1,length(spikesMasked{1,stim,elap}))];
+                        h.tcnum(n) = h.tcnum(n)+1;
+                    end
+                end
+            end
+            % h.rasters{n}=plot(h.spiketrain2{n},-h.tc{n},'k.');
+            h.rasters{n}.XData = [h.rasters{n}.XData,h.spiketrain2{n}];
+            h.rasters{n}.YData = [h.rasters{n}.YData,-h.tc{n}];
+        end
+        ax=gca;
+        if n<=((yplots-1)*xplots)
+            ax.XTick=[];
+        end
+        ax.YTick=[];
+        ax.XLim = [0,1];
+        ax.YLim = [-20,-1];
+%         ax.YLimMode = 'auto';
+    end
 end
 
 % rescale and set labels
@@ -127,7 +194,17 @@ for n = 1:h.numplots
     ax.YLim = [0 h.hMax];
     if n==((yplots-1)*xplots+1)   % axes label on bottom left subplot
         ax.YLabel.String = 'Firing rate (spikes/bin)';
-        ax.XLabel.String = 'Time';
+        if h1.rasterCheck.Value
+            ax.XTick=[];
+        else
+            ax.XLabel.String = 'Time';
+        end
+    elseif n > ((yplots-1)*xplots+1)
+        % remove y ticks, leave x ticks (unless xticks drawn under rasters)
+        ax.YTick=[];
+        if h1.rasterCheck.Value
+            ax.XTick=[];
+        end
     elseif mod(n,xplots)==1
         % leave y ticks, remove x
         ax.XTick=[];
@@ -149,6 +226,7 @@ end
 
 % % ========== UPDATE FUNCTION ============================================
 function updateFocusWindow(f)
+try
 % fetch app data
 h = guidata(f);
 h1 = guidata(h.figure_master);
@@ -171,7 +249,8 @@ else
 
     % append new spiketimes to spike train; sort
     if (h1.param2Select.Value==1 || h1.param2ValSelect.Value>1)
-        h.spiketrain{n} = sort([h.spiketrain{n},h1.spikedata{h.ch,h1.thisStim,:}]);
+        thisSpikes = h1.spikedata{h.ch,h1.thisStim,h1.stimElapsed(h1.thisStim)};
+        h.spiketrain{n} = sort([h.spiketrain{n},thisSpikes]);
         
         h.hists{n}.Data = h.spiketrain{n};
         h.hists{n}.BinCounts = h.hists{n}.BinCounts./sum(h1.stimElapsed(mask));
@@ -205,7 +284,21 @@ else
     % end
     % % ====================================================
     
+    
+    % raster curves
+    if h1.rasterCheck.Value
+        if (h1.param2Select.Value==1 || h1.param2ValSelect.Value>1)
+    %         h.spiketrain2{n}=[h.spiketrain2{n},spikesMasked{1,stim,elap}];
+    %         h.tc{n}=[h.tc{n},h.tcnum(n)*ones(1,length(spikesMasked{1,stim,elap}))];
+    %         h.tcnum(n) = h.tcnum(n)+1;
+            h.rasters{n}.XData = [h.rasters{n}.XData,thisSpikes];
+            h.rasters{n}.YData = [h.rasters{n}.YData,-h.tcnum(n)*ones(1,length(thisSpikes))];
+            h.tcnum(n) = h.tcnum(n)+1;
+        end
+    end
     guidata(f,h);
+end
+catch
 end
 end
 

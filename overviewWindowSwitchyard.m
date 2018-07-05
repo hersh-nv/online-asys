@@ -8,12 +8,12 @@ end
 % % ========== INITIALISATION FUNCTION ====================================
 function openOverviewWindow(f_master)
 
-% initialise handles, fetch master handles
+% initialise overview handles, fetch master handles
 h = struct;
 h.figure_master = f_master;
 h1 = guidata(f_master);
 
-% create figure, save to handles
+% create figure, and save its handles
 f = figure(2);
 h.figure1 = f;
 h1.figure_overview=f;
@@ -28,11 +28,13 @@ res = get(groot, 'Screensize');
 f.OuterPosition = f_master.OuterPosition;  % initialise to same position as master
 f.OuterPosition(1) = f_master.Position(3); % then shift to right 85% of screen
 f.OuterPosition(3) = res(3)-f.OuterPosition(1)+7;
-
 wwidth = f.Position(3);
 wheight= f.Position(4);
 
 % disable Overview settings until Overview is closed ?
+% TODO: leave them enabled; if they are changed while overview is open,
+% overview window should be cleared and redrawn without user having to
+% close it. probably add a .clear() method to the switchyard
 h1.channelInput.Enable = 'Off';
 h1.timeWinInput.Enable = 'Off';
 h1.param1Select.Enable = 'Off';
@@ -96,10 +98,6 @@ for iplot=1:h.numplots
     focusWindow = focusWindowSwitchyard();
     h.axes{iplot}.ButtonDownFcn = {focusWindow.open,h.figure_master,iplot};
     
-    % adjust axes appearance
-    h.axes{iplot}.XLimMode = 'auto';
-    h.axes{iplot}.YLimMode = 'auto';
-    
     if iplot==((yplots-1)*xplots+1)   % axes label on bottom left subplot
         h.axes{iplot}.YLabel.String = 'Firing rate (spikes/s)';
         h.axes{iplot}.XLabel.String = h1.stimLabels{h.param1};
@@ -109,13 +107,14 @@ for iplot=1:h.numplots
     end
 end
 
-% calculate and draw initial tuning
-% % % h.spikerate = cellfun(@(x) sum(x>=h1.tmin & x<=h1.tmax),h1.spikedata)./(h1.tmax-h1.tmin);
-% cellfun is, for some reason, incredibly slow for this task. hence the for
-% loops, which are ~100x faster. could implement a cellfun2 fcn to do the
-% below instead
+% calculate spikerates
+            % % % h.spikerate = cellfun(@(x) sum(x>=h1.tmin &
+            % x<=h1.tmax),h1.spikedata)./(h1.tmax-h1.tmin);
+            %
+            % cellfun is, for some reason, incredibly slow for this task.
+            % hence the for loops, which are ~100x faster. could implement
+            % a cellfun2 fcn to do the below instead
 h.spikerate = zeros(size(h1.spikedata));
-
 for stim = 1:size(h1.spikedata,2)
 for elap = 1:size(h1.spikedata,3)
     if elap>h1.stimElapsed(stim)
@@ -130,6 +129,7 @@ end
 end
 h.spikerate = h.spikerate/(h1.tmax-h1.tmin);
 
+% calculate averages to find tuning preferences
 for n=1:h1.nStim(h.param1)
     if h1.param2Select.Value == 1   % 'All': average across all other params
         mask = h1.stimIdxs(:,h.param1)==n;
@@ -154,6 +154,7 @@ if ~(h1.param2Select.Value>1 && h.param2ValIdx == 0)
     tunedidxs = find(~isnan(h.tuning(1,:)));
 end
 
+% draw tuning preferences into plots
 for iplot = 1 : h.numplots
     if h1.param2Select.Value>1 && h.param2ValIdx == 0
         for n2 = 1:h1.nStim(h.param2)
@@ -165,10 +166,26 @@ for iplot = 1 : h.numplots
         h.lines{iplot}.XData = h1.stimVals(h.param1,tunedidxs);
         h.lines{iplot}.YData = h.tuning(iplot,tunedidxs);
     end
+    
+    % adjust axes appearance
     h.axes{iplot}.XLim = [min(h1.stimVals(h.param1,:)),Inf];
-    h.axes{iplot}.YLimMode = 'auto';
-    h.axes{iplot}.YLim(1) = 0;
+    if h1.yScaleAutoCheck.Value
+        h.axes{iplot}.YLimMode = 'auto';
+        if h1.yScaleUniformCheck.Value
+            % store y lims, to scale all axes by max ylim later
+            h.YLims(iplot)=h.axes{iplot}.YLim(2);
+        end
+    else
+        h.axes{iplot}.YLim = [h1.overviewSettings.yMin, ...
+                              h1.overviewSettings.yMax];
+    end
 end
+if h1.yScaleAutoCheck.Value && h1.yScaleUniformCheck.Value
+    for iplot=1:h.numplots
+        h.axes{iplot}.YLim = [0,max(h.YLims)];
+    end
+end
+
 
 % save all app data
 guidata(f,h);
@@ -180,7 +197,6 @@ end
 % % ========== UPDATE FUNCTION ============================================
 function updateOverviewWindow(f)
 try 
-tuningsw = tic; % tuning stopwatch
 % fetch both handles
 h = guidata(f);
 h1 = guidata(h.figure_master);
@@ -190,17 +206,25 @@ if h1.param2Select.Value>1 && h.param2ValIdx>0 && h.param2ValIdx~=h1.thisIdxs(h.
     % therefore no need to update plot data. do nothing!
 else
     % retrieve spikes and repetition count for this particular condition
-    elapsedMask = h1.stimElapsed(h1.thisStim);
-    thisSpikes = h1.spikedata(h1.minChO:h1.maxChO,h1.thisStim,elapsedMask);
-
+    elapsedNum = h1.stimElapsed(h1.thisStim);
+    thisSpikes = h1.spikedata(h1.minChO:h1.maxChO,h1.thisStim,elapsedNum);
+    
+    % fill spikerate with nans as it expands; nans distinguish between
+    % non-elapsed trials vs. elapsed trials with 0 spikerate
+    if elapsedNum > size(h.spikerate,3)
+        [sry, srx, ~] = size(h.spikerate);
+        h.spikerate(:,:,elapsedNum)=nan(sry,srx);
+    end
+    
     % calculate spikerate for this stim
     for ch = h1.minChO:h1.maxChO
-        h.spikerate(ch,h1.thisStim,elapsedMask) = sum(thisSpikes{ch}>=h1.tmin & thisSpikes{ch}<h1.tmax);
+        h.spikerate(ch,h1.thisStim,elapsedNum) = sum(thisSpikes{ch}>=h1.tmin & thisSpikes{ch}<h1.tmax);
     end
 
-    if h1.param2Select.Value == 1   % 'All': average across all other params
-        % mask is idx of all stims with the same param 1 value as current
-        % stim
+    % average spikerates to calculate parameter preference / tuning
+    if h1.param2Select.Value == 1
+        % average across all non-1 params
+        % mask: idx of all stims with same param 1 value as current stim
         n = h1.thisIdxs(h.param1);
         mask = h1.stimIdxs(:,h.param1)==n;
 
@@ -224,15 +248,15 @@ else
             h.tuning(:,n) = mean(mean(spikerateMasked,3,'omitnan'),2,'omitnan');
         end
     end
-    stopwatch(1) = toc(tuningsw)*1e3;
-
+    
+    % mask off stim conditions that haven't elapsed yet from the graph
     if h1.param2Select.Value>1 && h.param2ValIdx == 0
         tunedidxs = find(~isnan(h.tuning(1,:,n2)));
     else
         tunedidxs = find(~isnan(h.tuning(1,:)));
     end
-
-    stopwatch(2) = toc(tuningsw)*1e3;
+    
+    % update tuning curve plots
     for iplot = 1 : h.numplots
         if h1.param2Select.Value>1 && h.param2ValIdx == 0
             h.lines{iplot,n2}.XData = h1.stimVals(h.param1,tunedidxs);
@@ -243,15 +267,24 @@ else
         end
 
         h.axes{iplot}.XLim = [min(h1.stimVals(h.param1,:)),Inf];
-        h.axes{iplot}.YLimMode = 'auto';
-%         h.axes{iplot}.YLim(1) = 0; % super slow line for some reason
+        if h1.yScaleAutoCheck.Value
+            h.axes{iplot}.YLimMode = 'auto';
+            if h1.yScaleUniformCheck.Value
+                h.YLims(iplot)=h.axes{iplot}.YLim(2);
+            end
+        else
+            h.axes{iplot}.YLim = [h1.overviewSettings.yMin, ...
+                                  h1.overviewSettings.yMax];
+        end
+    end
+    if h1.yScaleAutoCheck.Value && h1.yScaleUniformCheck.Value
+        for iplot=1:h.numplots
+            h.axes{iplot}.YLim = [0,max(h.YLims)];
+        end
     end
 
     guidata(h.figure1,h);
     guidata(h1.figure1,h1);
-%     if (h1.verbose)
-%         fprintf("Overview | t = %f, %f, %f\n",stopwatch(1),stopwatch(2),toc(tuningsw)*1e3);
-%     end
 end
 catch err
     getReport(err)
