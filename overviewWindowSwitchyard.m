@@ -1,4 +1,16 @@
 function f = overviewWindowSwitchyard()
+% f = overviewWindowSwitchyard() creates a switchyard object with
+%       child functions to create or control the Overview window:
+%
+%       f.open(~,~,f_master) creates an Overview window with tuning curves
+%           visualising the currently acquired spike data. f_master is the
+%           handle to the Master window of the GUI.
+%       f.update(f) updates an Overview figure f.
+%       f.close(f)  closes an Overview figure f and clears the associated
+%           tuning data.
+%
+%       HN - July 2018
+
 f.open = @openOverviewWindow;
 f.update = @updateOverviewWindow;
 f.close = @closeOverviewWindow;
@@ -14,32 +26,38 @@ h.figure_master = f_master;
 h1 = guidata(f_master);
 
 % create figure, and save its handles
-f = figure(2);
+if ishandle(h1.figure_overview)
+    f = figure(h1.figure_overview);
+    clf;
+else
+    f = figure('Name','Channel Overview','NumberTitle','Off');
+    % set figure position and other properties
+    f.CloseRequestFcn = @closeOverviewWindow;
+    res = get(groot, 'Screensize');
+    % NOTE: positioning is a bit finicky and it seems like OuterPosition takes
+    % into account some misc Windows 10 UI elements of unknown size. haven't
+    % yet found a more reliable way to tile windows to occupy 100% of desktop
+    % space while leaving room for Windows taskbar, startbar, etc...
+    f.OuterPosition = f_master.OuterPosition;  % initialise to same position as master
+    f.OuterPosition(1) = f_master.Position(3); % then shift to right 85% of screen
+    f.OuterPosition(3) = res(3)-f.OuterPosition(1)+7;
+    wwidth = f.Position(3);
+    wheight= f.Position(4);
+end
 h.figure1 = f;
 h1.figure_overview=f;
 
-% set figure position and other properties
-f.CloseRequestFcn = @closeOverviewWindow;
-res = get(groot, 'Screensize');
-% NOTE: positioning is a bit finicky and it seems like OuterPosition takes
-% into account some misc Windows 10 UI elements of unknown size. haven't
-% yet found a more reliable way to tile windows to occupy 100% of desktop
-% space while leaving room for Windows taskbar, startbar, etc...
-f.OuterPosition = f_master.OuterPosition;  % initialise to same position as master
-f.OuterPosition(1) = f_master.Position(3); % then shift to right 85% of screen
-f.OuterPosition(3) = res(3)-f.OuterPosition(1)+7;
-wwidth = f.Position(3);
-wheight= f.Position(4);
+
 
 % disable Overview settings until Overview is closed ?
 % TODO: leave them enabled; if they are changed while overview is open,
 % overview window should be cleared and redrawn without user having to
 % close it. probably add a .clear() method to the switchyard
-h1.channelInput.Enable = 'Off';
-h1.timeWinInput.Enable = 'Off';
-h1.param1Select.Enable = 'Off';
-h1.param2Select.Enable = 'Off';
-h1.param2ValSelect.Enable = 'Off';
+% h1.channelInput.Enable = 'Off';
+% h1.timeWinInput.Enable = 'Off';
+% h1.param1Select.Enable = 'Off';
+% h1.param2Select.Enable = 'Off';
+% h1.param2ValSelect.Enable = 'Off';
 
 
 % save some data to handles

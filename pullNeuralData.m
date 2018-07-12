@@ -77,6 +77,12 @@ while size(h.cmtbuffer,1)>=2
         h.param2ValSelect.String = {'All'};
         
         h.plotButton.Enable = 'On';
+        
+        % update stimulus status text
+        h.stimText = sprintf('%d %s',h.nStim(1),h.stimLabels{1});
+        for ss = 2:length(h.nStim)
+            h.stimText = sprintf([h.stimText,'  *  %d %s'],h.nStim(ss),h.stimLabels{ss});
+        end
     end
     
     % find current stim idx
@@ -114,8 +120,9 @@ while size(h.cmtbuffer,1)>=2
     
     % notify user of new trial
     statusText = sprintf(['\n'...
-                'Total trials = %d\n', ...
-                ], h.totaltrials);
+        h.stimText,'\n', ...
+        'Total trials = %d\n', ...
+        ], h.totaltrials);
     h.streamStatusText2.String = statusText;
 
     % clear this trial (comment) from buffer

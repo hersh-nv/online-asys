@@ -30,6 +30,8 @@ h.overviewSettings.yMax = 20;
 % focus window settings
 h.focusSettings.singletonCheck = 0;
 h.focusSettings.psthBinSize = 20;
+h.focusSettings.tMin = 0;
+h.focusSettings.tMax = 1;
 
 % initialise figure handles
 h.figure_overview = {};

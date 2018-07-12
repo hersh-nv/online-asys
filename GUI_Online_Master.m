@@ -22,7 +22,7 @@ function varargout = GUI_Online_Master(varargin)
 
 % Edit the above text to modify the response to help GUI_Online_Master
 
-% Last Modified by GUIDE v2.5 05-Jul-2018 14:53:33
+% Last Modified by GUIDE v2.5 12-Jul-2018 09:52:23
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -86,7 +86,8 @@ handles.streamStatusText1.String = '';
 handles.streamStatusText1.Position = [20,wheight-90,wwidth-40,20];
 
 handles.streamStatusText2.String = '';
-handles.streamStatusText2.Position = [20,wheight-300,wwidth-40,200];
+handles.streamStatusText2.Position = [10,wheight-220,wwidth-20,120];
+handles.streamStatusText2.BackgroundColor = [1 1 1];
 
 psHeight = 270;
 handles.plotSettingsPanel.Position = [10,wheight-500,wwidth-20,psHeight];
@@ -103,8 +104,8 @@ handles.param2ValSelect.Position =  [140,psHeight-150,wwidth-170,20];
 handles.ebCheck.Position =          [10, psHeight-180,wwidth-20,20];
 handles.yScaleLabel.Position =      [10, psHeight-212,wwidth-20,20];
 handles.yScaleInput.Position =      [10, psHeight-230,50,20];
-handles.yScaleAutoCheck.Position =  [70, psHeight-230,40,20];
-handles.yScaleUniformCheck.Position=[120,psHeight-230,wwidth-130,20];
+handles.yScaleAutoCheck.Position =  [70, psHeight-230,60,20];
+handles.yScaleUniformCheck.Position=[140,psHeight-230,wwidth-130,20];
 
 fsHeight = 200;
 handles.focusSettingsPanel.Position = [10,wheight-540-fsHeight,wwidth-20,fsHeight];
@@ -112,6 +113,8 @@ handles.focusWinSingletonCheck.Position = [10,fsHeight-40,wwidth-20,20];
 handles.rasterCheck.Position      = [10. fsHeight-60, wwidth-20. 20];
 handles.psthBinSizeLabel.Position = [10, fsHeight-90,120, 20];
 handles.psthBinSizeInput.Position = [140,fsHeight-90,wwidth-170,20];
+handles.psthTimeWinLabel.Position = [10, fsHeight-115,120, 20];
+handles.psthTimeWinInput.Position = [140,fsHeight-115,wwidth-170,20];
 
 handles.streamStimButton.String = 'Stream from Stim PC';
 handles.streamStimButton.Position = [20,80,wwidth-40,40];
@@ -434,10 +437,8 @@ try
     if (~isnan(yMin) && ~isnan(yMax) && yMax > yMin)
         handles.overviewSettings.yMin = yMin;
         handles.overviewSettings.yMax = yMax;
-        fprintf('Channel range set: %d:%d\n',yMin,yMax);
+        fprintf('Tuning curves Y-scale set: %d:%d\n',yMin,yMax);
         
-        % readjust overview window if it's open
-%         if ishandle(handles.figure_overview)
     else
         hObject.BackgroundColor=[0.8 0.2 0.2];
     end
@@ -451,6 +452,36 @@ guidata(hObject,handles);
 
 % --- Executes during object creation, after setting all properties.
 function yScaleInput_CreateFcn(hObject, eventdata, handles)
+
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function psthTimeWinInput_Callback(hObject, eventdata, handles)
+hObject.BackgroundColor=[1 1 1]; % reset bg colour
+chText = hObject.String;
+matches = regexp(chText,'([0-9\.]+):([0-9\.]+)','tokens');
+try
+    tMin = str2double(matches{1}{1});
+    tMax = str2double(matches{1}{2});
+    if (~isnan(tMin) && ~isnan(tMax) && tMax > tMin)
+        handles.focusSettings.tMin = tMin;
+        handles.focusSettings.tMax = tMax;
+        fprintf('PSTH time window set: %g:%g\n',tMin,tMax);
+        
+    else
+        hObject.BackgroundColor=[0.8 0.2 0.2];
+    end
+catch
+    hObject.BackgroundColor=[0.8 0.2 0.2];
+end
+guidata(hObject,handles);
+
+
+% --- Executes during object creation, after setting all properties.
+function psthTimeWinInput_CreateFcn(hObject, eventdata, handles)
 
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
