@@ -20,6 +20,8 @@ end
 % % ========== INITIALISATION FUNCTION ====================================
 function openOverviewWindow(f_master)
 
+try
+
 % initialise overview handles, fetch master handles
 h = struct;
 h.figure_master = f_master;
@@ -72,10 +74,12 @@ end
 h.numplots = h1.maxChO-h1.minChO + 1;
 h.spikerate = h1.spikerate; % copy empty array of correct size
 h.tuning = nan(h.numplots,h1.nStim(h.param1));
+h.tuningSD = zeros(h.numplots,h1.nStim(h.param1));
 if h1.param2Select.Value > 1       % Param 2 selected
     if h.param2ValIdx == 0             % "Show all"
         numCurves = h1.nStim(h.param2);
         h.tuning = repmat(h.tuning,[1 1 numCurves]);
+        h.tuningSD = repmat(h.tuningSD,[1 1 numCurves]);
         
         % new colour order
         newCO=[linspace(0,1,numCurves)', ...
@@ -103,13 +107,29 @@ for iplot=1:h.numplots
         % draw each curve
         hold on
         for iCurve = 1:numCurves
-            h.lines{iplot,iCurve} = plot(h.tuning(iplot,:), ...#
-                'Marker','.', ...
-                'MarkerSize',5);
+            if h1.ebCheck.Value
+                h.lines{iplot,iCurve} = errorbar(h.tuning(iplot,:,iCurve), ...
+                    h.tuningSD(iplot,:,iCurve), ...
+                    'CapSize',0, ...
+                    'Marker','.', ...
+                    'MarkerSize',5);
+            else
+                h.lines{iplot,iCurve} = plot(h.tuning(iplot,:,iCurve), ...
+                    'Marker','.', ...
+                    'MarkerSize',5);
+            end
         end
         hold off
     else
-        h.lines{iplot} = plot(h.tuning(iplot,:),'-k.','MarkerSize',10);
+        if h1.ebCheck.Value
+            h.lines{iplot} = errorbar(h.tuning(iplot,:), ...
+                h.tuningSD(iplot,:), ...
+                '-k.',...
+                'CapSize',0, ...
+                'MarkerSize',10);
+        else
+            h.lines{iplot} = plot(h.tuning(iplot,:),'-k.','MarkerSize',10);
+        end
     end
     
     % attach Focus callback
@@ -150,22 +170,43 @@ h.spikerate = h.spikerate/(h1.tmax-h1.tmin);
 % calculate averages to find tuning preferences
 for n=1:h1.nStim(h.param1)
     if h1.param2Select.Value == 1   % 'All': average across all other params
+        % find spikerates for this param value
         mask = h1.stimIdxs(:,h.param1)==n;
-        spikerateMasked = h.spikerate(h1.minChO:h1.maxChO,mask,:);
-        h.tuning(:,n) = mean(mean(spikerateMasked,3,'omitnan'),2,'omitnan');
+        srMasked = h.spikerate(h1.minChO:h1.maxChO,mask,:);
+        % reshape to collapse repetitions into different stim conds
+        srMasked = reshape(srMasked,size(srMasked,1),[]);
+        % average and std
+        h.tuning(:,n) = mean(srMasked,2,'omitnan');
+        if h1.ebCheck.Value
+            h.tuningSD(:,n) = std(srMasked,0,2,'omitnan');
+        end
     elseif h1.param2Select.Value>1 && h.param2ValIdx==0 % Param 2 selected: 'All'
         % param 2 value (n2) defines another condition for the mask
         for n2 = 1:h1.nStim(h.param2)
+            % find spikerates for these param values
             mask = (h1.stimIdxs(:,h.param1)==n) & (h1.stimIdxs(:,h.param2)==n2);
-            spikerateMasked = h.spikerate(h1.minChO:h1.maxChO,mask,:);
-            h.tuning(:,n,n2) = mean(mean(spikerateMasked,3,'omitnan'),2,'omitnan');
+            srMasked = h.spikerate(h1.minChO:h1.maxChO,mask,:);
+            % reshape to collapse repetitions into different stim conds
+            srMasked = reshape(srMasked,size(srMasked,1),[]);
+            % average and std
+            h.tuning(:,n,n2) = mean(srMasked,2,'omitnan');
+            if h1.ebCheck.Value
+                h.tuningSD(:,n,n2) = std(srMasked,0,2,'omitnan');
+            end
         end
     else  % Param 2 selected and val selected
         % param 2 value (n2) defines another condition for the mask
         n2 = h.param2ValIdx;
+        % find spikerates for these param values
         mask = (h1.stimIdxs(:,h.param1)==n) & (h1.stimIdxs(:,h.param2)==n2);
-        spikerateMasked = h.spikerate(h1.minChO:h1.maxChO,mask,:);
-        h.tuning(:,n) = mean(mean(spikerateMasked,3,'omitnan'),2,'omitnan');
+        srMasked = h.spikerate(h1.minChO:h1.maxChO,mask,:);
+        % reshape to collapse repetitions into different stim conds
+        srMasked = reshape(srMasked,size(srMasked,1),[]);
+        % average and std
+        h.tuning(:,n) = mean(mean(srMasked,3,'omitnan'),2,'omitnan');
+        if h1.ebCheck.Value
+            h.tuningSD(:,n) = std(srMasked,0,2,'omitnan');
+        end
     end
 end
 if ~(h1.param2Select.Value>1 && h.param2ValIdx == 0)
@@ -179,10 +220,18 @@ for iplot = 1 : h.numplots
             tunedidxs = find(~isnan(h.tuning(1,:,n2)));
             h.lines{iplot,n2}.XData = h1.stimVals(h.param1,tunedidxs);
             h.lines{iplot,n2}.YData = h.tuning(iplot,tunedidxs,n2);
+            if h1.ebCheck.Value
+                h.lines{iplot,n2}.YPositiveDelta = h.tuningSD(iplot,tunedidxs,n2);
+                h.lines{iplot,n2}.YNegativeDelta = h.tuningSD(iplot,tunedidxs,n2);
+            end
         end
     else
         h.lines{iplot}.XData = h1.stimVals(h.param1,tunedidxs);
         h.lines{iplot}.YData = h.tuning(iplot,tunedidxs);
+        if h1.ebCheck.Value
+            h.lines{iplot}.YPositiveDelta = h.tuningSD(iplot,tunedidxs);
+            h.lines{iplot}.YNegativeDelta = h.tuningSD(iplot,tunedidxs);
+        end
     end
     
     % adjust axes appearance
@@ -209,6 +258,10 @@ end
 guidata(f,h);
 guidata(f_master,h1);
 
+catch err
+    getReport(err)
+    keyboard;
+end
 end
 
 
@@ -245,25 +298,35 @@ else
         % mask: idx of all stims with same param 1 value as current stim
         n = h1.thisIdxs(h.param1);
         mask = h1.stimIdxs(:,h.param1)==n;
-
         % retrieve all spikerates in mask
-        spikerateMasked = h.spikerate(h1.minChO:h1.maxChO,mask,:);
-
-        h.tuning(:,n) = mean(mean(spikerateMasked,3,'omitnan'),2,'omitnan');
+        srMasked = h.spikerate(h1.minChO:h1.maxChO,mask,:);
+        % reshape to collapse repetitions into different stim conds
+        srMasked = reshape(srMasked,size(srMasked,1),[]);
+        % average and std
+        h.tuning(:,n) = mean(srMasked,2,'omitnan');
+        if h1.ebCheck.Value
+            h.tuningSD(:,n) = std(srMasked,0,2,'omitnan');
+        end
     else
         % mask is idx of all stims with the same param 1 and param 2 value
         % as current stim
         n = h1.thisIdxs(h.param1);
         n2 = h1.thisIdxs(h.param2);
         mask = h1.stimIdxs(:,h.param1)==n & h1.stimIdxs(:,h.param2)==n2;
-
         % retrieve all spikerates in mask
-        spikerateMasked = h.spikerate(h1.minChO:h1.maxChO,mask,:);
-
+        srMasked = h.spikerate(h1.minChO:h1.maxChO,mask,:);
+        % reshape to collapse repetitions into different stim conds
+        srMasked = reshape(srMasked,size(srMasked,1),[]);
         if (h.param2ValIdx==0) % "Show all"
-            h.tuning(:,n,n2) = mean(mean(spikerateMasked,3,'omitnan'),2,'omitnan');
+            h.tuning(:,n,n2) = mean(mean(srMasked,3,'omitnan'),2,'omitnan');
+            if h1.ebCheck.Value
+                h.tuningSD(:,n,n2) = std(srMasked,0,2,'omitnan');
+            end
         else
-            h.tuning(:,n) = mean(mean(spikerateMasked,3,'omitnan'),2,'omitnan');
+            h.tuning(:,n) = mean(mean(srMasked,3,'omitnan'),2,'omitnan');
+            if h1.ebCheck.Value
+                h.tuningSD(:,n) = std(srMasked,0,2,'omitnan');
+            end
         end
     end
     
@@ -279,9 +342,17 @@ else
         if h1.param2Select.Value>1 && h.param2ValIdx == 0
             h.lines{iplot,n2}.XData = h1.stimVals(h.param1,tunedidxs);
             h.lines{iplot,n2}.YData = h.tuning(iplot,tunedidxs,n2);
+            if h1.ebCheck.Value
+                h.lines{iplot,n2}.YPositiveDelta = h.tuningSD(iplot,tunedidxs,n2);
+                h.lines{iplot,n2}.YNegativeDelta = h.tuningSD(iplot,tunedidxs,n2);
+            end
         else
             h.lines{iplot}.XData = h1.stimVals(h.param1,tunedidxs);
             h.lines{iplot}.YData = h.tuning(iplot,tunedidxs);
+            if h1.ebCheck.Value
+                h.lines{iplot}.YPositiveDelta = h.tuningSD(iplot,tunedidxs);
+                h.lines{iplot}.YNegativeDelta = h.tuningSD(iplot,tunedidxs);
+            end
         end
 
         h.axes{iplot}.XLim = [min(h1.stimVals(h.param1,:)),Inf];
