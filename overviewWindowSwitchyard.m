@@ -61,32 +61,46 @@ h1.figure_overview=f;
 % h1.param2Select.Enable = 'Off';
 % h1.param2ValSelect.Enable = 'Off';
 
+% fetch and initialise some stim parameters and tuning arrays
+if ~h1.heatmapCheck.Value
 
-% save some data to handles
-h.param1 = h1.param1Select.Value;
-h.param2 = find(strcmp(h1.param2Select.String{h1.param2Select.Value},h1.stimLabels));
-param2Val = str2double(h1.param2ValSelect.String{h1.param2ValSelect.Value});
-if isnan(param2Val)
-    h.param2ValIdx = 0;
+    % save some data to handles
+    h.param1 = h1.param1Select.Value;
+    h.param2 = find(strcmp(h1.param2Select.String{h1.param2Select.Value},h1.stimLabels));
+    param2Val = str2double(h1.param2ValSelect.String{h1.param2ValSelect.Value});
+    if isnan(param2Val)
+        h.param2ValIdx = 0;
+    else
+        h.param2ValIdx = find(param2Val==h1.stimVals(h.param2,:));
+    end
+    h.numplots = h1.maxChO-h1.minChO + 1;
+    h.spikerate = h1.spikerate; % copy empty array of correct size
+    h.tuning = nan(h.numplots,h1.nStim(h.param1));
+    h.tuningSD = zeros(h.numplots,h1.nStim(h.param1));
+    if h1.param2Select.Value > 1       % Param 2 selected
+        if h.param2ValIdx == 0             % "Show all"
+            numCurves = h1.nStim(h.param2);
+            h.tuning = repmat(h.tuning,[1 1 numCurves]);
+            h.tuningSD = repmat(h.tuningSD,[1 1 numCurves]);
+
+            % new colour order
+            newCO=[linspace(0,1,numCurves)', ...
+                zeros(numCurves,1), ...
+                linspace(1,0,numCurves)'];
+        end 
+    end
+    
 else
-    h.param2ValIdx = find(param2Val==h1.stimVals(h.param2,:));
+    % check if X and Y are identified stim conditions / parameters
+    % for now i'm hardcoding the X and Y param idxs
+    h.param1 = 1;
+    h.param2 = 2;
+    
+    h.numplots = h1.maxChO-h1.minChO + 1;
+    h.spikerate = h1.spikerate; % copy empty array of correct size
+    h.tuning = zeros(h.numplots,h1.nStim(h.param1),h1.nStim(h.param2));    
 end
-h.numplots = h1.maxChO-h1.minChO + 1;
-h.spikerate = h1.spikerate; % copy empty array of correct size
-h.tuning = nan(h.numplots,h1.nStim(h.param1));
-h.tuningSD = zeros(h.numplots,h1.nStim(h.param1));
-if h1.param2Select.Value > 1       % Param 2 selected
-    if h.param2ValIdx == 0             % "Show all"
-        numCurves = h1.nStim(h.param2);
-        h.tuning = repmat(h.tuning,[1 1 numCurves]);
-        h.tuningSD = repmat(h.tuningSD,[1 1 numCurves]);
-        
-        % new colour order
-        newCO=[linspace(0,1,numCurves)', ...
-            zeros(numCurves,1), ...
-            linspace(1,0,numCurves)'];
-    end 
-end
+    
 
 % start drawing subplots
 yplots = round(sqrt(h.numplots/2)); % approx twice as many x plots as y plots
@@ -95,54 +109,65 @@ xplots = ceil(h.numplots/yplots);
 wwidthp=0.95; % proportional window width and
 wheightp=0.9; % height for the subplots to be drawn inside
 for iplot=1:h.numplots
+    
     % create and save handles to axes and lineplot separately
     pos(1) = mod(iplot-1,xplots)*wwidthp/xplots + (1-wwidthp);
     pos(2) = (1+wwidthp)/2-wheightp/yplots*ceil(iplot/xplots);
     pos(3) = wwidthp/xplots*0.75;
     pos(4) = wheightp/yplots*0.9;
+    
     h.axes{iplot} = subplot('Position',pos);
-    if h1.param2Select.Value>1 && h.param2ValIdx == 0             % "Show all"
-        % apply color order
-        h.axes{iplot}.ColorOrder = newCO;
-        % draw each curve
-        hold on
-        for iCurve = 1:numCurves
+        
+    % draw tuning curves
+    if ~h1.heatmapCheck.Value
+
+        if h1.param2Select.Value>1 && h.param2ValIdx == 0             % "Show all"
+            % apply color order
+            h.axes{iplot}.ColorOrder = newCO;
+            % draw each curve
+            hold on
+            for iCurve = 1:numCurves
+                if h1.ebCheck.Value
+                    h.lines{iplot,iCurve} = errorbar(h.tuning(iplot,:,iCurve), ...
+                        h.tuningSD(iplot,:,iCurve), ...
+                        'CapSize',0, ...
+                        'Marker','.', ...
+                        'MarkerSize',5);
+                else
+                    h.lines{iplot,iCurve} = plot(h.tuning(iplot,:,iCurve), ...
+                        'Marker','.', ...
+                        'MarkerSize',5);
+                end
+            end
+            hold off
+        else
             if h1.ebCheck.Value
-                h.lines{iplot,iCurve} = errorbar(h.tuning(iplot,:,iCurve), ...
-                    h.tuningSD(iplot,:,iCurve), ...
+                h.lines{iplot} = errorbar(h.tuning(iplot,:), ...
+                    h.tuningSD(iplot,:), ...
+                    '-k.',...
                     'CapSize',0, ...
-                    'Marker','.', ...
-                    'MarkerSize',5);
+                    'MarkerSize',10);
             else
-                h.lines{iplot,iCurve} = plot(h.tuning(iplot,:,iCurve), ...
-                    'Marker','.', ...
-                    'MarkerSize',5);
+                h.lines{iplot} = plot(h.tuning(iplot,:),'-k.','MarkerSize',10);
             end
         end
-        hold off
-    else
-        if h1.ebCheck.Value
-            h.lines{iplot} = errorbar(h.tuning(iplot,:), ...
-                h.tuningSD(iplot,:), ...
-                '-k.',...
-                'CapSize',0, ...
-                'MarkerSize',10);
-        else
-            h.lines{iplot} = plot(h.tuning(iplot,:),'-k.','MarkerSize',10);
+        if iplot==((yplots-1)*xplots+1)   % axes label on bottom left subplot
+            h.axes{iplot}.YLabel.String = 'Firing rate (spikes/s)';
+            h.axes{iplot}.XLabel.String = h1.stimLabels{h.param1};
         end
+        if ceil(iplot/xplots)~=yplots    % x axis ticks on bottom edge
+            h.axes{iplot}.XTick=[];
+        end
+    
+    % draw heatmaps
+    else
+        h.heatmaps{iplot} = imagesc(squeeze(h.tuning(iplot,:,:)));
     end
     
     % attach Focus callback
     focusWindow = focusWindowSwitchyard();
     h.axes{iplot}.ButtonDownFcn = {focusWindow.open,h.figure_master,iplot};
     
-    if iplot==((yplots-1)*xplots+1)   % axes label on bottom left subplot
-        h.axes{iplot}.YLabel.String = 'Firing rate (spikes/s)';
-        h.axes{iplot}.XLabel.String = h1.stimLabels{h.param1};
-    end
-    if ceil(iplot/xplots)~=yplots    % x axis ticks on bottom edge
-        h.axes{iplot}.XTick=[];
-    end
 end
 
 % calculate spikerates
@@ -169,7 +194,7 @@ h.spikerate = h.spikerate/(h1.tmax-h1.tmin);
 
 % calculate averages to find tuning preferences
 for n=1:h1.nStim(h.param1)
-    if h1.param2Select.Value == 1   % 'All': average across all other params
+    if h1.param2Select.Value == 1 && ~h1.heatmapCheck.Value  % 'All': average across all other params
         % find spikerates for this param value
         mask = h1.stimIdxs(:,h.param1)==n;
         srMasked = h.spikerate(h1.minChO:h1.maxChO,mask,:);
@@ -180,8 +205,8 @@ for n=1:h1.nStim(h.param1)
         if h1.ebCheck.Value
             h.tuningSD(:,n) = std(srMasked,0,2,'omitnan');
         end
-    elseif h1.param2Select.Value>1 && h.param2ValIdx==0 % Param 2 selected: 'All'
-        % param 2 value (n2) defines another condition for the mask
+    elseif (h1.param2Select.Value>1 && h.param2ValIdx==0) || h1.heatmapCheck.Value % Param 2 selected: 'All'
+        % param 2 value (n2) definhes another condition for the mask
         for n2 = 1:h1.nStim(h.param2)
             % find spikerates for these param values
             mask = (h1.stimIdxs(:,h.param1)==n) & (h1.stimIdxs(:,h.param2)==n2);
@@ -214,42 +239,51 @@ if ~(h1.param2Select.Value>1 && h.param2ValIdx == 0)
 end
 
 % draw tuning preferences into plots
-for iplot = 1 : h.numplots
-    if h1.param2Select.Value>1 && h.param2ValIdx == 0
-        for n2 = 1:h1.nStim(h.param2)
-            tunedidxs = find(~isnan(h.tuning(1,:,n2)));
-            h.lines{iplot,n2}.XData = h1.stimVals(h.param1,tunedidxs);
-            h.lines{iplot,n2}.YData = h.tuning(iplot,tunedidxs,n2);
+if ~h1.heatmapCheck.Value
+    for iplot = 1 : h.numplots
+        if h1.param2Select.Value>1 && h.param2ValIdx == 0
+            for n2 = 1:h1.nStim(h.param2)
+                tunedidxs = find(~isnan(h.tuning(1,:,n2)));
+                h.lines{iplot,n2}.XData = h1.stimVals(h.param1,tunedidxs);
+                h.lines{iplot,n2}.YData = h.tuning(iplot,tunedidxs,n2);
+                if h1.ebCheck.Value
+                    h.lines{iplot,n2}.YPositiveDelta = h.tuningSD(iplot,tunedidxs,n2);
+                    h.lines{iplot,n2}.YNegativeDelta = h.tuningSD(iplot,tunedidxs,n2);
+                end
+            end
+        else
+            h.lines{iplot}.XData = h1.stimVals(h.param1,tunedidxs);
+            h.lines{iplot}.YData = h.tuning(iplot,tunedidxs);
             if h1.ebCheck.Value
-                h.lines{iplot,n2}.YPositiveDelta = h.tuningSD(iplot,tunedidxs,n2);
-                h.lines{iplot,n2}.YNegativeDelta = h.tuningSD(iplot,tunedidxs,n2);
+                h.lines{iplot}.YPositiveDelta = h.tuningSD(iplot,tunedidxs);
+                h.lines{iplot}.YNegativeDelta = h.tuningSD(iplot,tunedidxs);
             end
         end
-    else
-        h.lines{iplot}.XData = h1.stimVals(h.param1,tunedidxs);
-        h.lines{iplot}.YData = h.tuning(iplot,tunedidxs);
-        if h1.ebCheck.Value
-            h.lines{iplot}.YPositiveDelta = h.tuningSD(iplot,tunedidxs);
-            h.lines{iplot}.YNegativeDelta = h.tuningSD(iplot,tunedidxs);
+
+        % adjust axes appearance
+        h.axes{iplot}.XLim = [min(h1.stimVals(h.param1,:)),Inf];
+        if h1.yScaleAutoCheck.Value
+            h.axes{iplot}.YLimMode = 'auto';
+            if h1.yScaleUniformCheck.Value
+                % store y lims, to scale all axes by max ylim later
+                h.YLims(iplot)=h.axes{iplot}.YLim(2);
+            end
+        else
+            h.axes{iplot}.YLim = [h1.overviewSettings.yMin, ...
+                                  h1.overviewSettings.yMax];
         end
     end
-    
-    % adjust axes appearance
-    h.axes{iplot}.XLim = [min(h1.stimVals(h.param1,:)),Inf];
-    if h1.yScaleAutoCheck.Value
-        h.axes{iplot}.YLimMode = 'auto';
-        if h1.yScaleUniformCheck.Value
-            % store y lims, to scale all axes by max ylim later
-            h.YLims(iplot)=h.axes{iplot}.YLim(2);
+    if h1.yScaleAutoCheck.Value && h1.yScaleUniformCheck.Value
+        for iplot=1:h.numplots
+            h.axes{iplot}.YLim = [0,max(h.YLims)];
         end
-    else
-        h.axes{iplot}.YLim = [h1.overviewSettings.yMin, ...
-                              h1.overviewSettings.yMax];
     end
-end
-if h1.yScaleAutoCheck.Value && h1.yScaleUniformCheck.Value
-    for iplot=1:h.numplots
-        h.axes{iplot}.YLim = [0,max(h.YLims)];
+else
+    for iplot = 1:h.numplots
+        thisTuning = squeeze(h.tuning(iplot,:,:));
+        % scale
+        thisTuning = thisTuning .* 200;
+        h.heatmaps{iplot}.CData = thisTuning;
     end
 end
 
@@ -293,7 +327,17 @@ else
     end
 
     % average spikerates to calculate parameter preference / tuning
-    if h1.param2Select.Value == 1
+    if h1.heatmapCheck.Value
+        % draw heatmaps
+        n = h1.thisIdxs(h.param1);
+        n2 = h1.thisIdxs(h.param2);
+        mask = h1.stimIdxs(:,h.param1)==n & h1.stimIdxs(:,h.param2)==n2;
+        % retrieve all spikerates in mask
+        srMasked = h.spikerate(h1.minChO:h1.maxChO,mask,:);
+        % reshape to collapse repetitions into different stim conds
+        srMasked = reshape(srMasked,size(srMasked,1),[]);
+        h.tuning(:,n,n2) = mean(srMasked,2,'omitnan');
+    elseif h1.param2Select.Value == 1
         % average across all non-1 params
         % mask: idx of all stims with same param 1 value as current stim
         n = h1.thisIdxs(h.param1);
@@ -317,8 +361,8 @@ else
         srMasked = h.spikerate(h1.minChO:h1.maxChO,mask,:);
         % reshape to collapse repetitions into different stim conds
         srMasked = reshape(srMasked,size(srMasked,1),[]);
-        if (h.param2ValIdx==0) % "Show all"
-            h.tuning(:,n,n2) = mean(mean(srMasked,3,'omitnan'),2,'omitnan');
+        if h.param2ValIdx==0 % "Show all"
+            h.tuning(:,n,n2) = mean(srMasked,2,'omitnan');
             if h1.ebCheck.Value
                 h.tuningSD(:,n,n2) = std(srMasked,0,2,'omitnan');
             end
@@ -331,15 +375,19 @@ else
     end
     
     % mask off stim conditions that haven't elapsed yet from the graph
-    if h1.param2Select.Value>1 && h.param2ValIdx == 0
-        tunedidxs = find(~isnan(h.tuning(1,:,n2)));
-    else
-        tunedidxs = find(~isnan(h.tuning(1,:)));
+    if ~h1.heatmapCheck.Value
+        if h1.param2Select.Value>1 && h.param2ValIdx == 0
+            tunedidxs = find(~isnan(h.tuning(1,:,n2)));
+        else
+            tunedidxs = find(~isnan(h.tuning(1,:)));
+        end
     end
     
     % update tuning curve plots
     for iplot = 1 : h.numplots
-        if h1.param2Select.Value>1 && h.param2ValIdx == 0
+        if h1.heatmapCheck.Value
+            h.heatmaps{iplot}.CData = squeeze(h.tuning(iplot,:,:));
+        elseif h1.param2Select.Value>1 && h.param2ValIdx == 0
             h.lines{iplot,n2}.XData = h1.stimVals(h.param1,tunedidxs);
             h.lines{iplot,n2}.YData = h.tuning(iplot,tunedidxs,n2);
             if h1.ebCheck.Value
@@ -366,6 +414,7 @@ else
                                   h1.overviewSettings.yMax];
         end
     end
+    
     if h1.yScaleAutoCheck.Value && h1.yScaleUniformCheck.Value
         for iplot=1:h.numplots
             h.axes{iplot}.YLim = [0,max(h.YLims)];

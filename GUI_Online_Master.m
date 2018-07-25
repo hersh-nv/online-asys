@@ -22,7 +22,7 @@ function varargout = GUI_Online_Master(varargin)
 
 % Edit the above text to modify the response to help GUI_Online_Master
 
-% Last Modified by GUIDE v2.5 12-Jul-2018 09:52:23
+% Last Modified by GUIDE v2.5 24-Jul-2018 15:53:14
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -89,8 +89,10 @@ handles.streamStatusText2.String = '';
 handles.streamStatusText2.Position = [10,wheight-220,wwidth-20,120];
 handles.streamStatusText2.BackgroundColor = [1 1 1];
 
+handles.heatmapCheck.Position = [10,wheight-250,wwidth-20,20];
+
 psHeight = 270;
-handles.plotSettingsPanel.Position = [10,wheight-500,wwidth-20,psHeight];
+handles.plotSettingsPanel.Position = [10,wheight-530,wwidth-20,psHeight];
 handles.channelLabel.Position =     [10, psHeight-40, 120,20];
 handles.channelInput.Position =     [140,psHeight-40, wwidth-170,20];
 handles.timeWinLabel.Position =     [10, psHeight-65, 120,20];
@@ -486,3 +488,7 @@ function psthTimeWinInput_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in heatmapCheck.
+function heatmapCheck_Callback(hObject, eventdata, handles)
