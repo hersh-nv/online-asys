@@ -93,8 +93,8 @@ if ~h1.heatmapCheck.Value
 else
     % check if X and Y are identified stim conditions / parameters
     % for now i'm hardcoding the X and Y param idxs
-    h.param1 = 1;
-    h.param2 = 2;
+    h.param1 = 2; % X
+    h.param2 = 1; % Y
     
     h.numplots = h1.maxChO-h1.minChO + 1;
     h.spikerate = h1.spikerate; % copy empty array of correct size
@@ -161,7 +161,15 @@ for iplot=1:h.numplots
     
     % draw heatmaps
     else
-        h.heatmaps{iplot} = imagesc(squeeze(h.tuning(iplot,:,:)));
+        if h1.yScaleUniformCheck.Value
+            h.heatmaps{iplot} = image(squeeze(h.tuning(iplot,:,:)));
+        else
+            h.heatmaps{iplot} = imagesc(squeeze(h.tuning(iplot,:,:)));
+        end
+        if iplot==((yplots-1)*xplots+1)   % axes label on bottom left subplot
+            h.axes{iplot}.YLabel.String = h1.stimLabels{h.param1};
+            h.axes{iplot}.XLabel.String = h1.stimLabels{h.param2};
+        end
     end
     
     % attach Focus callback
@@ -282,7 +290,7 @@ else
     for iplot = 1:h.numplots
         thisTuning = squeeze(h.tuning(iplot,:,:));
         % scale
-        thisTuning = thisTuning .* 200;
+        thisTuning = thisTuning ./ max(max(max(h.tuning))) * 255;
         h.heatmaps{iplot}.CData = thisTuning;
     end
 end
@@ -386,7 +394,9 @@ else
     % update tuning curve plots
     for iplot = 1 : h.numplots
         if h1.heatmapCheck.Value
-            h.heatmaps{iplot}.CData = squeeze(h.tuning(iplot,:,:));
+            thisTuning = squeeze(h.tuning(iplot,:,:));
+            thisTuning = thisTuning ./ max(max(max(h.tuning))) * 255;
+            h.heatmaps{iplot}.CData = thisTuning;
         elseif h1.param2Select.Value>1 && h.param2ValIdx == 0
             h.lines{iplot,n2}.XData = h1.stimVals(h.param1,tunedidxs);
             h.lines{iplot,n2}.YData = h.tuning(iplot,tunedidxs,n2);
@@ -402,22 +412,26 @@ else
                 h.lines{iplot}.YNegativeDelta = h.tuningSD(iplot,tunedidxs);
             end
         end
-
-        h.axes{iplot}.XLim = [min(h1.stimVals(h.param1,:)),Inf];
-        if h1.yScaleAutoCheck.Value
-            h.axes{iplot}.YLimMode = 'auto';
-            if h1.yScaleUniformCheck.Value
-                h.YLims(iplot)=h.axes{iplot}.YLim(2);
+        
+        if ~h1.heatmapCheck.Value
+            h.axes{iplot}.XLim = [min(h1.stimVals(h.param1,:)),Inf];
+            if h1.yScaleAutoCheck.Value
+                h.axes{iplot}.YLimMode = 'auto';
+                if h1.yScaleUniformCheck.Value
+                    h.YLims(iplot)=h.axes{iplot}.YLim(2);
+                end
+            else
+                h.axes{iplot}.YLim = [h1.overviewSettings.yMin, ...
+                                      h1.overviewSettings.yMax];
             end
-        else
-            h.axes{iplot}.YLim = [h1.overviewSettings.yMin, ...
-                                  h1.overviewSettings.yMax];
         end
     end
     
-    if h1.yScaleAutoCheck.Value && h1.yScaleUniformCheck.Value
-        for iplot=1:h.numplots
-            h.axes{iplot}.YLim = [0,max(h.YLims)];
+    if ~h1.heatmapCheck.Value
+        if h1.yScaleAutoCheck.Value && h1.yScaleUniformCheck.Value
+            for iplot=1:h.numplots
+                h.axes{iplot}.YLim = [0,max(h.YLims)];
+            end
         end
     end
 
