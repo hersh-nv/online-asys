@@ -22,7 +22,7 @@ err=0;
 try
     cbmex('open');
     cbmex('mask',0,0); % deactivate all channels except for..
-    for ch=h.minCh:h.maxCh
+    for ch=h.chStreamRange
         cbmex('mask',ch,1); % channels minCh-maxCh
     end
     cbmex('trialconfig',1,'comment',20,'absolute','nocontinuous');

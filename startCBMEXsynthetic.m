@@ -19,7 +19,9 @@ h.pullTimer = timer('Period',1, ...
     'StartDelay',0.5 ...
     );
 
-% CBMEX synthetic only accepts channels 1-32
+% % CBMEX synthetic only accepts channels 1-32
+h.channelStreamInput.String = '1:32';
+h.chStreamRange = 1:32;
 h.minCh = 1;
 h.maxCh = 32;
 

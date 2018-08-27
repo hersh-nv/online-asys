@@ -7,8 +7,8 @@ function pullNeuralData(~, ~, f)
 %
 % See also STARTCBMEX
 
-% get handles
 try
+% get handles
 h = guidata(f);
 
 swtoc=[];
@@ -25,7 +25,7 @@ end
 cmtTimesBufferTmp = cmtTimesBufferTmp./h.sampling_freq;
 
 % move cbmex neural data into local buffer
-for ch=h.minCh:h.maxCh
+for ch=h.chStreamRange
     % convert from sample counts to seconds
     spikeBufferTmp{ch,2} = spikeBufferTmp{ch,2}./h.sampling_freq;
     % fill spike buffer
@@ -101,12 +101,10 @@ while size(h.cmtbuffer,1)>=2
     
     thisStim = find(mask,1);
     h.thisStim = thisStim; % condition of just-elapsed trial
-    fprintf('thisX=%g, thisY=%g, thisStim=%g\n',h.thisIdxs(1:2),h.thisStim);
-    
     
     stimCount=h.stimElapsed(thisStim)+1;
     % on each channel ...
-    for ch=h.minCh:h.maxCh
+    for ch=h.chStreamRange
         % ... find spikes inside trial start and end
         spikeidx=(h.spikebuffer{ch}>=h.cmttimesbuffer(1) & h.spikebuffer{ch}<h.cmttimesbuffer(2));
         if ~isempty(spikeidx)

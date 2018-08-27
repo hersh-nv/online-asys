@@ -22,7 +22,7 @@ function varargout = GUI_Online_Master(varargin)
 
 % Edit the above text to modify the response to help GUI_Online_Master
 
-% Last Modified by GUIDE v2.5 24-Jul-2018 15:53:14
+% Last Modified by GUIDE v2.5 27-Aug-2018 11:58:28
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -77,10 +77,12 @@ wwidth = handles.pos(3);
 wheight= handles.pos(4);
 
 % set element sizes relative to master figure position/size
-handles.streamSelectMenu.Position = [20, wheight-65, 80, 40];
+handles.channelStreamLabel.Position = [20,wheight-35,40,20];
+handles.channelStreamInput.Position = [60,wheight-35,60,20];
+handles.streamSelectMenu.Position = [20, wheight-80, 100, 40];
 
 handles.streamButton.String = 'Start stream';
-handles.streamButton.Position = [120 wheight-50 wwidth-140 30];
+handles.streamButton.Position = [140 wheight-60 wwidth-160 50];
 
 handles.streamStatusText1.String = '';
 handles.streamStatusText1.Position = [20,wheight-90,wwidth-40,20];
@@ -161,7 +163,8 @@ if strcmp(hObject.String,'Start stream')
             errstatus = sprintf(['\n'...
                 'Is Central running on acquisition PC?\n' ...
                 'Is acquisition PC''s IP address 192.168.137.1?\n' ...
-                'Can this PC successfully ping that IP?']);
+                'Can this PC successfully ping that IP?\n'...
+                'Is CBMEX on the MATLAB path on this PC?']);
             set(handles.streamStatusText2,'String',errstatus);
             set(hObject,'Value',0);
         else
@@ -263,7 +266,7 @@ else
                 maxChO>minChO && minChO>=1 && maxChO<=handles.maxCh)
             handles.minChO = minChO; 
             handles.maxChO = maxChO;     
-            fprintf('Channel range set: %d:%d\n',minChO,maxChO);
+            fprintf('Tuning curve channel range set: %d:%d\n',minChO,maxChO);
         else
             hObject.BackgroundColor=[0.8 0.2 0.2];
         end
@@ -476,7 +479,8 @@ try
     else
         hObject.BackgroundColor=[0.8 0.2 0.2];
     end
-catch
+catch err
+    getReport(err)
     hObject.BackgroundColor=[0.8 0.2 0.2];
 end
 guidata(hObject,handles);
@@ -492,3 +496,30 @@ end
 
 % --- Executes on button press in heatmapCheck.
 function heatmapCheck_Callback(hObject, eventdata, handles)
+
+
+function channelStreamInput_Callback(hObject, eventdata, handles)
+hObject.BackgroundColor = [1 1 1];
+try
+    channelRange = eval(['[',hObject.String,']']);
+    if sum(channelRange<=0)>0
+        error('Stream channels must be positive integers.')
+        hObject.BackgroundColor = [0.8 0.2 0.2];
+    else
+        handles.chStreamRange = sort(channelRange);
+        handles.minCh = channelRange(1);
+        handles.maxCh = channelRange(end);
+        fprintf('Streaming channel range set: %s\n',hObject.String);
+    end
+catch err
+    getReport(err)
+    hObject.BackgroundColor = [0.8 0.2 0.2];
+end
+guidata(hObject,handles);
+
+
+% --- Executes during object creation, after setting all properties.
+function channelStreamInput_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
