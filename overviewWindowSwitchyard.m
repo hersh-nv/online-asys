@@ -49,12 +49,10 @@ end
 h.figure1 = f;
 h1.figure_overview=f;
 
-
-
 % disable Overview settings until Overview is closed ?
-% TODO: leave them enabled; if they are changed while overview is open,
-% overview window should be cleared and redrawn without user having to
-% close it. probably add a .clear() method to the switchyard
+% UPDATE: leave them enabled; if they are changed while overview is open,
+% overview window is cleared and redrawn without user having to
+% close it.
 % h1.channelInput.Enable = 'Off';
 % h1.timeWinInput.Enable = 'Off';
 % h1.param1Select.Enable = 'Off';
@@ -92,9 +90,20 @@ if ~h1.heatmapCheck.Value
     
 else
     % check if X and Y are identified stim conditions / parameters
-    % for now i'm hardcoding the X and Y param idxs
-    h.param1 = 2; % X
-    h.param2 = 1; % Y
+    h.param1 = 0;
+    h.param2 = 0;
+    for iparam = 1:numel(h1.param1Select.String)
+        if regexp(h1.param1Select.String{iparam},'X')
+            h.param1 = iparam;
+        elseif regexp(h1.param1Select.String{iparam},'Y')
+            h.param2 = iparam;
+        end
+    end
+    
+    % catch error if X and Y are not identified params
+    if h.param1 == 0 || h.param2 == 0
+        error('X and Y are not identified stimulus parameters');
+    end
     
     h.numplots = h1.maxChO-h1.minChO + 1;
     h.spikerate = h1.spikerate; % copy empty array of correct size
@@ -302,7 +311,6 @@ guidata(f_master,h1);
 
 catch err
     getReport(err)
-    keyboard;
 end
 end
 
@@ -449,16 +457,15 @@ end
 function closeOverviewWindow(f,~)
 % reenable Overview settings
 h = guidata(f);
-h1 = guidata(h.figure_master);
 try
-    h1.channelInput.Enable = 'On';
-    h1.timeWinInput.Enable = 'On';
-    h1.param1Select.Enable = 'On';
-    h1.param2Select.Enable = 'On';
+    h1 = guidata(h.figure_master);
     if h1.param2Select.Value>1
         h1.param2ValSelect.Enable = 'On';
     end
-catch
+catch err
+    getReport(err)
+    fprintf(['Could not clear Overview window from GUI, probably because it was not initialised properly.\n' ...
+        'Type ''delete(gcf)'' to close manually\n']);
     keyboard;
 end
 % then close figure
